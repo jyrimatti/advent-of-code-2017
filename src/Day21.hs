@@ -39,12 +39,12 @@ parts n dim = [subMatrix (x-1,y-1) (x+n-2,y+n-2) | x <- [1,(n+1)..dim], y <- [1,
 subs p = fmap force $ fmap ($ p) $ parts (if size p `mod` 2 == 0 then 2 else 3) (size p)
 
 enhance 0 _   = id
-enhance iteration rules = enhance (iteration - 1) rules . join . fmap (replace rules) . subs
+enhance iteration rules = enhance (iteration - 1::Int) rules . join . fmap (replace rules) . subs
 
 replace rules x = snd $ fromJust $ find ((== x) . fst) rules
 
 join :: [Pattern] -> Pattern
-join ms = fromBlocks False $ chunksOf (floor $ sqrt $ fromIntegral $ length ms) ms
+join ms = fromBlocks False $ chunksOf (floor $ (sqrt :: Double -> Double) $ fromIntegral $ length ms) ms
 
 solve iterations = do
     i <- input

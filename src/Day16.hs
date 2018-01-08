@@ -58,7 +58,7 @@ programs n = fromList $ fmap index2name [0..n-1]
 solve initialRepeat initialProgs inp = solve_ 0 initialProgs (dance inp)
   where solve_ rep progs _ | rep == initialRepeat = progs
         -- let's assume the program eventually repeat themselves, so we can exit early...
-        solve_ rep progs _ | rep /= 0 && progs == initialProgs = solve (initialRepeat `mod` rep) initialProgs inp
+        solve_ rep progs _ | rep /= (0::Int) && progs == initialProgs = solve (initialRepeat `mod` rep) initialProgs inp
         solve_ rep progs dan = solve_ (rep+1) (foldl' (flip eval) progs dan) dan
 
 solve1 = solve 1 (programs 16)

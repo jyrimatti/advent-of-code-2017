@@ -12,9 +12,10 @@ factorA = 16807
 factorB = 48271
 divisor = 2147483647
 
-testA = 65
-testB = 8921
+testA = 65 :: Int
+testB = 8921 :: Int
 
+toBinary :: Int -> String
 toBinary = flip (showIntAtBase 2 intToDigit) ""
 
 calculate mult prev = prev * mult `rem` divisor
@@ -29,8 +30,6 @@ solve1 a b = length $ filter (uncurry (==)) $ take 40000000 $ calcBoth a b
 
 solve2 a b = length $ filter (uncurry (==)) $ take 5000000 $ calcBoth2 a b
 
-solution1 :: IO Int
-solution1 = return $ solve1 inputA inputB
+solution1 = solve1 inputA inputB
 
-solution2 :: IO Int
-solution2 = return $ solve2 inputA inputB
+solution2 = solve2 inputA inputB

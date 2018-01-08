@@ -36,7 +36,7 @@ data Program = Program {
   subs :: [Program]
 } deriving Show
 
-enhance pMap (Prog n w s) = Program n w (fmap (\n -> enhance pMap $ pMap ! n) s)
+enhance pMap (Prog n w s) = Program n w $ fmap (enhance pMap . (!) pMap) s
 
 programs inp = let
   pMap = progsMap inp
@@ -51,15 +51,15 @@ root inp = let
   
 rootName = name . root
 
-totalWeight (Program _ w subs) = w + sum (fmap totalWeight subs)
+totalWeight (Program _ w ss) = w + sum (fmap totalWeight ss)
 
-weightUnbalance (Program _ _ subs) = let
-  subWeights = fmap (\s -> (s,totalWeight s)) subs
+weightUnbalance (Program _ _ ss) = let
+  subWeights = fmap (\s -> (s,totalWeight s)) ss
   commonWeight = head $ tail subWeights
   cmp a b = snd a == snd b
   unbalanced = deleteBy cmp commonWeight (nubBy cmp subWeights)
  in
-  case foldMap weightUnbalance subs of
+  case foldMap weightUnbalance ss of
     [x] -> [x]
     [] -> (\(s,u) -> weight s + (snd commonWeight - u)) <$> unbalanced
 

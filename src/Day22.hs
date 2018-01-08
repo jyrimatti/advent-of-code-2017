@@ -52,6 +52,7 @@ adj f i grid         = second (adjust f i) grid
 
 update f (x,y) = adj (adj f x) y
 
+turnLeft :: Direction -> Direction
 turnLeft (0,1)  = (-1,0)
 turnLeft (-1,0) = (0,-1)
 turnLeft (0,-1) = (1,0)
@@ -89,7 +90,7 @@ emptyCopy (a,b) = (replicate (length a) Clean,replicate (length b) Clean)
 
 extend :: Grid -> State -> Grid
 extend grid (State _ (x,y) _) | (max (abs x) (abs y)) < length (fst grid) = grid
-extend grid (State _ (x,y) _) = bimap (\bottoms -> fmap extendRow $ bottoms |> emptyCopy (bottoms `index` 0))
+extend grid (State _ _     _) = bimap (\bottoms -> fmap extendRow $ bottoms |> emptyCopy (bottoms `index` 0))
                                       (\tops -> fmap extendRow $ tops |> emptyCopy (tops `index` 0))
                                       grid
 

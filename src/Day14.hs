@@ -8,9 +8,9 @@ import Data.Bifunctor (second)
 import qualified Data.Vector as V
 import qualified Data.Set as S 
 
-input = ("amgozmfv-" ++) . show <$> [0..127]
+input = ("amgozmfv-" ++) . show <$> [0..127::Int]
 
-input_test = ("flqrgnkx-" ++) . show <$> [0..127]
+input_test = ("flqrgnkx-" ++) . show <$> [0..127::Int]
 
 sublist start len list | len <= length list = take len $ drop start $ list ++ list
 sublist start len list = error $ show [show start, show len, show list] 
@@ -43,7 +43,10 @@ hash inp = let
 
 pad xs = reverse $ take 4 $ reverse $ replicate 4 '0' ++ xs
 
-toBinary = pad . flip (showIntAtBase 2 intToDigit) "" . fst . head . readHex . (\a -> [a])
+hex2int :: Char -> Int
+hex2int = fst . head . readHex . (\a -> [a])
+
+toBinary = pad . flip (showIntAtBase 2 intToDigit) "" . hex2int
 
 grid = fmap (foldMap toBinary . flip hash [0..255])
 
@@ -51,7 +54,9 @@ solve1 = length . filter (== '1') . concat . grid
 
 toMatrix = V.fromList . fmap V.fromList . grid
 
-adjacent size (x,y) = S.fromList $ filter (\(x,y) -> x >= 0 && y >= 0 && x < size && y < size) [(x-1,y),(x,y-1),(x+1,y),(x,y+1)]
+withinBounds size (x,y) = x >= 0 && y >= 0 && x < size && y < size
+
+adjacent size (x,y) = S.fromList $ filter (withinBounds size) [(x-1,y),(x,y-1),(x+1,y),(x,y+1)]
 
 group matrix found (x,y) | (matrix V.! y) V.! x == '0' = (found,S.empty)
 group matrix found coord = foldr (\c (f,g) -> let

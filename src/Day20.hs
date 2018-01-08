@@ -34,7 +34,7 @@ manhattan (Particle (px,py,pz) _ _) = abs px + abs py + abs pz
 
 steps filt particles = unfoldr (\ps -> Just (ps, filt $ fmap update ps)) particles
 
-withIndex = zip [0..]
+withIndex = zip [(0::Int)..]
 withDistance = fmap (\(i,p) -> (i,manhattan p))
 smallestDistance = minimumBy (compare `on` snd)
 

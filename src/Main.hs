@@ -90,8 +90,8 @@ main = do
     half2 Day14.solution2
 
     day "15 (both halves take a minute or two)"
-    half1 =<< Day15.solution1
-    half2 =<< Day15.solution2
+    half1 Day15.solution1
+    half2 Day15.solution2
 
     day "16"
     half1 =<< Day16.solution1

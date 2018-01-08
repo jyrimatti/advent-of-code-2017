@@ -5,7 +5,7 @@ import Prelude hiding (null,replicate)
 import Data.Char (ord)
 import Text.Parsec (parse,many1,(<|>),try)
 import Text.Parsec.Char (string,letter,digit,char,space)
-import Data.Vector (fromList,(!),(//),empty,null,replicate)
+import Data.Vector (fromList,(!),(//),replicate)
 import qualified Control.Concurrent.Thread as Thread ( forkIO )
 import Control.Concurrent.Chan (newChan,writeChan,readChan)
 import Control.Concurrent.MVar (newMVar,takeMVar,tryTakeMVar,putMVar)
@@ -85,8 +85,8 @@ solve1 inp = do
 solve2 inp = do
     rcvQueue <- newChan
     sndQueue <- newChan
-    snd1 <- newMVar 0
-    snd2 <- newMVar 0
+    snd1 <- newMVar (0::Int)
+    snd2 <- newMVar (0::Int)
     let res1 = evalProg rcvQueue sndQueue snd1 (instrs <$> inp) (initRegs 0) 0
     let res2 = evalProg sndQueue rcvQueue snd2 (instrs <$> inp) (initRegs 1) 0
     (_,wait1) <- Thread.forkIO $ res1
