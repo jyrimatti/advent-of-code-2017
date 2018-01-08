@@ -15,11 +15,11 @@ input_test = lines <$> readFile "input/input13_test.txt"
 
 layers = fmap (\[a,b] -> Layer a b) . fmap (fmap (read . unpack) <$> splitOn ":" . pack)
 
-hasScanner (Layer _ range) time = time `mod` ((range - 1) * 2) == 0
+hasScanner (Layer _ r) time = time `mod` ((r - 1) * 2) == 0
 
-severity (Layer depth range) = depth * range
+severity (Layer d r) = d * r
 
-timeAt delay (Layer depth _) = depth + delay
+timeAt delay (Layer d _) = d + delay
 
 caught delay layer = hasScanner layer $ timeAt delay layer
 
@@ -27,8 +27,8 @@ tripSeverity delay = sum . fmap severity . filter (caught delay)
 
 solve1 = tripSeverity 0 . layers
 
-solve2 input = let
-  ls = layers input
+solve2 inp = let
+  ls = layers inp
  in
   fromJust $ find (\delay -> not $ any (caught delay) ls) [0..]
 

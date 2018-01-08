@@ -2,7 +2,6 @@
 module Day15 where
   
 import Data.Char (intToDigit)
-import Data.List (elemIndex)
 import Data.Text (pack, takeEnd)
 import Numeric (showIntAtBase)
 
@@ -24,7 +23,7 @@ calc condition factor initial = takeEnd 16 . pack . toBinary <$> (filter conditi
 
 calcBoth a b = zip (calc (const True) factorA a) (calc (const True) factorB b)
 
-calcBoth2 a b = zip (calc (\a -> (a `mod` 4) == 0) factorA a) (calc (\a -> (a `mod` 8) == 0) factorB b)
+calcBoth2 aa b = zip (calc (\a -> (a `mod` 4) == 0) factorA aa) (calc (\a -> (a `mod` 8) == 0) factorB b)
 
 solve1 a b = length $ filter (uncurry (==)) $ take 40000000 $ calcBoth a b
 

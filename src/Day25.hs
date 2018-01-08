@@ -2,14 +2,11 @@
 module Day25 where
 
 import Prelude hiding (replicate,length,(++))
-import Text.Parsec (parse,many,option,(<|>),try)
-import Text.Parsec.String (Parser)
-import Text.Parsec.Char (string,noneOf,anyChar,letter,digit,char,space)
-import Text.Parsec.Combinator (sepBy1)
+import Text.Parsec (parse,many,(<|>),try)
+import Text.Parsec.Char (string,noneOf,anyChar,char,space)
 import Data.List (find)
 import Data.Foldable (toList)
---import Data.Vector.Unboxed (Vector,fromList,(!),empty,null,last,(//),replicate,reverse,tail,sum,length,(++))
-import Data.Sequence (Seq,update,replicate,length,(><),index,(|>))
+import Data.Sequence (update,replicate,length,index,(|>))
 
 input = readFile "input/input25.txt"
 input_test = readFile "input/input25_test.txt"
@@ -49,28 +46,27 @@ phase = Phase <$> (cond <* ws) <*> (write <* ws) <*> ((try moveRight <|> try mov
 
 state = State <$> (phaseHeader <* ws) <*> phase <*> phase
 
-instructions :: Parser Instructions
 instructions = Instructions <$> (header <* ws) <*> (endCondition <* ws) <*> many (state <* ws)
 
 instrs = either undefined id <$> parse instructions ""
 
 extend loc vec | length vec <= abs loc + 1 = vec |> 0
-extend loc vec                             = vec
+extend _   vec                             = vec
 
 run 0          (neg,pos)      _   _     _ = (reverse $ tail $ toList neg, toList pos)
-run iterations (neg,pos) loc state states = let
-    Just (State _ phase0 phase1) = find ((== state) . name) states
+run iterations (neg,pos) loc s ss = let
+    Just (State _ p0 p1) = find ((== s) . name) ss
     !curValue = if loc < 0 then neg `index` abs loc else pos `index` loc
-    Phase _ out dir newState = if curValue == 0 then phase0 else phase1
+    Phase _ out dir newState = if curValue == 0 then p0 else p1
     !newTape = (if loc < 0 then update (abs loc) out (extend loc neg) else neg,
                 if loc >= 0 then update loc out (extend loc pos) else pos)
     !newLoc = loc + dir
   in
-    run (iterations-1) newTape newLoc newState states
+    run (iterations-1) newTape newLoc newState ss
 
 checksum = sum
 
-solve (Instructions begin endIn states) = run endIn (replicate 2 0,replicate 2 0) 0 begin states
+solve (Instructions begin endIn ss) = run endIn (replicate 2 0,replicate 2 0) 0 begin ss
 
 solve1 = (\(a,b) -> checksum a + checksum b) . solve . instrs
 

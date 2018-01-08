@@ -38,16 +38,16 @@ data Program = Program {
 
 enhance pMap (Prog n w s) = Program n w (fmap (\n -> enhance pMap $ pMap ! n) s)
 
-programs input = let
-  pMap = progsMap input
+programs inp = let
+  pMap = progsMap inp
  in
   map (enhance pMap) pMap
 
-root input = let
-  progs = programs input
-  allSubs = concatMap (fmap name . subs) $ elems progs
+root inp = let
+  prgs = programs inp
+  allSubs = concatMap (fmap name . subs) $ elems prgs
  in
-  progs ! (head $ keys progs \\ allSubs)
+  prgs ! (head $ keys prgs\\ allSubs)
   
 rootName = name . root
 

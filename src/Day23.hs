@@ -2,12 +2,10 @@
 module Day23 where
     
 import Prelude hiding (null,replicate,last)
-import Data.Char (ord,chr)
-import Text.Parsec (parse,many1,option,(<|>),try)
-import Text.Parsec.String (Parser)
-import Text.Parsec.Char (string,noneOf,anyChar,letter,digit,char,space)
-import Text.Parsec.Combinator (sepBy1)
-import Data.Vector (Vector,fromList,(!),empty,null,last)
+import Data.Char (ord)
+import Text.Parsec (parse,many1,(<|>),try)
+import Text.Parsec.Char (string,letter,digit,char,space)
+import Data.Vector (fromList,(!))
 import Data.Numbers.Primes (isPrime)
 import qualified Data.Vector.Unboxed as VU
 
@@ -21,23 +19,20 @@ data Instr = Set Reg (Either Reg Int)
            | Jnz (Either Reg Int) (Either Reg Int)
   deriving Show
 
-reg :: Parser Reg
-reg = letter
+regP = letter
 
-number :: Parser Int
-number = read <$> many1 (digit <|> char '-')
+numberP = read <$> many1 (digit <|> char '-')
 
-regOrVal :: Parser (Either Reg Int)
-regOrVal = Left <$> reg <|> Right <$> number
+regOrValP = Left <$> regP <|> Right <$> numberP
 
-instrP :: Parser Instr
-instrP = try (Set <$> (string "set " *> reg) <*> (space *> regOrVal)) <|>
-         try (Sub <$> (string "sub " *> reg) <*> (space *> regOrVal)) <|>
-         try (Mul <$> (string "mul " *> reg) <*> (space *> regOrVal)) <|>
-         try (Jnz <$> (string "jnz " *> regOrVal) <*> (space *> regOrVal))
+instrP = try (Set <$> (string "set " *> regP)      <*> (space *> regOrValP)) <|>
+         try (Sub <$> (string "sub " *> regP)      <*> (space *> regOrValP)) <|>
+         try (Mul <$> (string "mul " *> regP)      <*> (space *> regOrValP)) <|>
+         try (Jnz <$> (string "jnz " *> regOrValP) <*> (space *> regOrValP))
 
-instrs :: [String] -> Vector Instr
-instrs input = fromList $ either undefined id <$> parse instrP "" <$> input
+instr = either undefined id . parse instrP ""
+
+instrs = fromList . fmap instr
 
 initRegs aValue = VU.replicate (ord 'h' - ord 'a' + 1) 0 VU.// [(index 'a', aValue)]
 
@@ -45,7 +40,7 @@ index r = ord r - 97
 
 get_ regs r = regs VU.! index r
 get regs (Left r) = regs VU.! index r
-get regs (Right v) = v
+get _   (Right v) = v
 
 eval :: (Int,VU.Vector Int) -> Instr -> (Int,VU.Vector Int,Int)
 eval (muls,regs) (Set reg regOrVal)                         = (muls, regs VU.// [(index reg, get regs regOrVal)],1)
@@ -54,7 +49,7 @@ eval (muls,regs) (Mul reg regOrVal)                         = (muls+1, regs VU./
 eval (muls,regs) (Jnz regOrVal os) | get regs regOrVal /= 0 = (muls,regs,get regs os)
 eval (muls,regs) (Jnz _ _)                                  = (muls,regs,1)
 
-evalProg prog muls regs loc steps | loc < 0 || loc >= length prog ||steps == 0 = (muls,regs)
+evalProg prog muls regs loc steps | loc < 0 || loc >= length prog ||steps == (0::Int) = (muls,regs)
 evalProg prog muls regs loc steps =
   let
     (!m,!r,!o) = eval (muls,regs) (prog ! loc)
@@ -63,9 +58,9 @@ evalProg prog muls regs loc steps =
 
 stepSize = 17
 
-solve1 input = evalProg (instrs input) 0 (initRegs 0) 0 (-1)
-solve2 input = let 
-   (_,initialRegs) = evalProg (instrs input) 0 (initRegs 1) 0 7
+solve1 inp = evalProg (instrs inp) 0 (initRegs 0) 0 (-1)
+solve2 inp = let 
+   (_,initialRegs) = evalProg (instrs inp) 0 (initRegs 1) 0 7
    start = initialRegs VU.! 1
    end = initialRegs VU.! 2
  in

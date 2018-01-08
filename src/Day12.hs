@@ -6,7 +6,7 @@ import Text.Parsec (parse,many1)
 import Text.Parsec.String (Parser)
 import Text.Parsec.Char (string, noneOf)
 import Text.Parsec.Combinator (sepBy1)
-import Data.Map.Strict (Map,fromList,(!),elems,keys,map)
+import Data.Map.Strict (Map,fromList,(!),elems,map)
 import Data.Set (empty,member,insert)
 import Data.List (nub)
   
@@ -27,10 +27,10 @@ data Program = Program {
   neighbors :: [Program]
 } deriving Show
 
-progs input = either undefined id $ parse progP "" $ input
+progs = either undefined id . parse progP ""
 
 progsMap :: [String] -> Map String Prog
-progsMap input = fromList $ fmap (\p@(Prog n ns) -> (n,p)) (progs <$> input)
+progsMap inp = fromList $ fmap (\p@(Prog n ns) -> (n,p)) (progs <$> inp)
 
 enhance pMap (Prog n ns) = Program n (fmap (\name -> enhance pMap $ pMap ! name) ns)
 

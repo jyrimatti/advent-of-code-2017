@@ -1,8 +1,7 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 module Day10 where
 
-import Data.Char (chr,ord)
-import Data.List (cycle,intersperse)
+import Data.Char (ord)
 import Data.List.Split (chunksOf)
 import Data.Bits (xor)
 import Numeric (showHex)
@@ -39,8 +38,8 @@ standardSuffix = [17, 31, 73, 47, 23]
 
 denseHash = fmap (foldr1 xor) . chunksOf 16
 
-solve2 list input = let
-  lengths = (ord <$> input) ++ standardSuffix
+solve2 list inp = let
+  lengths = (ord <$> inp) ++ standardSuffix
   times64 = take (64 * length lengths) $ cycle lengths
   toHexWithLeadingZero i = case showHex i "" of [a] -> ['0',a]; x -> x
  in
