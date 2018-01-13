@@ -6,8 +6,8 @@ import Data.Maybe (fromJust)
 
 input = fmap unpack . splitOn (pack ",") . pack <$> readFile "input/input11.txt"
 
-move (x,y) "n" = (x,y+1)
-move (x,y) "s" = (x,y-1)
+move (x,y) "n"  = (x  ,y+1)
+move (x,y) "s"  = (x  ,y-1)
 move (x,y) "nw" = (x-1,y)
 move (x,y) "sw" = (x-1,y-1)
 move (x,y) "se" = (x+1,y)
@@ -17,11 +17,11 @@ walk start [] = [start]
 walk start (x:xs) = start : walk (move start x) xs
 
 distance :: (Int,Int) -> (Int,Int) -> Double
-distance (ax,ay) (bx,by) = sqrt $ fromIntegral $ (ax-bx)^2 + (ay-by)^2
+distance (ax,ay) (bx,by) = sqrt $ fromIntegral $ (ax-bx)^(2::Int) + (ay-by)^(2::Int)
 
-neighbouring hex = move hex <$> ["n", "s", "nw", "sw", "se", "ne"]
+neighbouring hex = fmap (move hex) ["n", "s", "nw", "sw", "se", "ne"]
 
-solve goal = fromJust $ aStar neighbouring (\_ _ -> 1) (distance goal) (== goal) (0,0)
+solve goal = fromJust $ aStar neighbouring (const $ const 1) (distance goal) (== goal) (0,0)
 
 solve1 = length . snd . solve . last . walk (0,0)
 

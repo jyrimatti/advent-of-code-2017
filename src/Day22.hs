@@ -1,12 +1,13 @@
 module Day22 where
 
 import Prelude hiding (map,(!!),replicate,(++))
-import Data.Sequence (Seq,fromList,adjust,index,(|>),replicate,(><))
-import qualified Data.Sequence as S (reverse)
+import Data.Sequence (Seq,adjust,index,(|>),replicate,(><))
+import qualified Data.Sequence as Seq (fromList,reverse)
 import Data.Bifunctor (bimap,first,second)
 import Data.Foldable (toList)
+import Data.Tuple.Extra ((&&&),both)
 
-input = readFile "input/input22.txt"
+input      = readFile "input/input22.txt"
 input_test = readFile "input/input22_test.txt"
 
 data Node = Clean | Infected | Flagged | Weakened
@@ -24,10 +25,10 @@ type Grid = (Seq Row,Seq Row)
 parse inp = let
     rawRows = lines inp
     negSize = length rawRows `div` 2
-    f = fromList . fmap parseNode
-    rows = fmap (\row -> bimap f f (reverse $ take negSize row, drop negSize row)) rawRows
+    f = Seq.fromList . fmap parseNode
+    rows = fmap (both f . (reverse . take negSize &&& drop negSize)) rawRows
   in
-    bimap fromList fromList (drop (negSize+1) rows, reverse $ take (negSize+1) rows)
+    both Seq.fromList . (drop (negSize+1) &&& reverse . take (negSize+1)) $ rows
 
 (v1,_) !! i | i < 0 = v1 `index` (abs i - 1)
 (_,v2) !! i         = v2 `index` i
@@ -35,20 +36,19 @@ parse inp = let
 parseNode '#' = Infected
 parseNode '.' = Clean
 
-type Direction = (Int,Int)
+type Direction  = (Int,Int)
 type Coordinate = (Int,Int)
 
 data State = State {
-    direction :: Direction,
-    location :: Coordinate,
+    direction  :: Direction,
+    location   :: Coordinate,
     infections :: Int
 } deriving Show
 
-prettyPrint :: Grid -> String
-prettyPrint (bottoms,tops) = unlines $ toList $ fmap (\(bs,ts) -> toList $ foldMap show $ S.reverse bs >< ts) $ S.reverse tops >< bottoms
+prettyPrint (bottoms,tops) = unlines . toList . fmap (\(bs,ts) -> toList . foldMap show $ Seq.reverse bs >< ts) $ Seq.reverse tops >< bottoms
 
-adj f i grid | i < 0 = first (adjust f (abs i - 1)) grid
-adj f i grid         = second (adjust f i) grid
+adj f i | i < 0 = first (adjust f (abs i - 1))
+adj f i         = second (adjust f i)
 
 update f (x,y) = adj (adj f x) y
 
@@ -58,10 +58,7 @@ turnLeft (-1,0) = (0,-1)
 turnLeft (0,-1) = (1,0)
 turnLeft (1,0)  = (0,1)
 
-turnRight (0,1)  = (1,0)
-turnRight (-1,0) = (0,1)
-turnRight (0,-1) = (-1,0)
-turnRight (1,0)  = (0,-1)
+turnRight = both (* (-1)) . turnLeft
 
 evolveNode False Clean    = Infected
 evolveNode False Infected = Clean
@@ -70,7 +67,6 @@ evolveNode _     Weakened = Infected
 evolveNode _     Infected = Flagged
 evolveNode _     Flagged  = Clean
 
-infectOrClean :: Bool -> Grid -> State -> Grid
 infectOrClean evolved grid (State _ loc _) = update (evolveNode evolved) loc grid
 
 updateDirection False grid state@(State dir (x,y) infs) | grid !! y !! x == Clean    = state { direction = turnLeft dir, infections = infs+1 }
@@ -82,16 +78,13 @@ updateDirection _     grid state@(State dir (x,y) _)    | grid !! y !! x == Flag
 
 move state@(State (dx,dy) (x,y) _) = state { location = (x+dx,y+dy) }
 
-extendRow :: Row -> Row
-extendRow (a,b) = (a |> Clean, b |> Clean)
+extendRow = both (|> Clean)
 
-emptyCopy :: Row -> Row
-emptyCopy (a,b) = (replicate (length a) Clean,replicate (length b) Clean)
+emptyCopy = both (flip replicate Clean . length)
 
-extend :: Grid -> State -> Grid
 extend grid (State _ (x,y) _) | (max (abs x) (abs y)) < length (fst grid) = grid
 extend grid (State _ _     _) = bimap (\bottoms -> fmap extendRow $ bottoms |> emptyCopy (bottoms `index` 0))
-                                      (\tops -> fmap extendRow $ tops |> emptyCopy (tops `index` 0))
+                                      (\tops    -> fmap extendRow $ tops |> emptyCopy (tops `index` 0))
                                       grid
 
 act evolved (grid,state) = let
@@ -102,7 +95,7 @@ act evolved (grid,state) = let
 
 initialState = State (0,1) (0,0) 0
 
-solv evolved iterations inp = head $ drop iterations $ iterate (act evolved) (parse inp, initialState)
+solv evolved iterations inp = head . drop iterations . iterate (act evolved) $ (parse inp, initialState)
 
 solve evolved iterations = infections . snd . solv evolved iterations
 

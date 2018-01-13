@@ -3,81 +3,81 @@ module Day18 where
 
 import Prelude hiding (null,replicate)
 import Data.Char (ord)
-import Text.Parsec (parse,many1,(<|>),try)
-import Text.Parsec.Char (string,letter,digit,char,space)
-import Data.Vector (fromList,(!),(//),replicate)
+import Text.Parsec (parse,(<|>),try)
+import Text.Parsec.Char (string,letter,space)
+import Text.ParserCombinators.Parsec.Number (int)
+import qualified Data.Sequence as Seq (fromList)
+import Data.Sequence (index,update)
 import qualified Control.Concurrent.Thread as Thread ( forkIO )
 import Control.Concurrent.Chan (newChan,writeChan,readChan)
 import Control.Concurrent.MVar (newMVar,takeMVar,tryTakeMVar,putMVar)
 import Control.Exception.Base (catch,BlockedIndefinitelyOnMVar(..))
 import Control.Monad (replicateM)
 
-input = fromList <$> lines <$> readFile "input/input18.txt"
-input_test = fromList <$> lines <$> readFile "input/input18_test.txt"
-input_test2 = fromList <$> lines <$> readFile "input/input18_test2.txt"
+input       = Seq.fromList <$> lines <$> readFile "input/input18.txt"
+input_test  = Seq.fromList <$> lines <$> readFile "input/input18_test.txt"
+input_test2 = Seq.fromList <$> lines <$> readFile "input/input18_test2.txt"
 
-type Reg = Char
+type Reg      = Char
+type RegOrInt = Either Reg Int
 
-data Instr = Snd (Either Reg Int)
-           | Set Reg (Either Reg Int)
-           | Add Reg (Either Reg Int)
-           | Mul Reg (Either Reg Int)
-           | Mod Reg (Either Reg Int)
+data Instr = Snd RegOrInt
+           | Set Reg RegOrInt
+           | Add Reg RegOrInt
+           | Mul Reg RegOrInt
+           | Mod Reg RegOrInt
            | Rcv Reg
-           | Jgz (Either Reg Int) (Either Reg Int)
+           | Jgz RegOrInt RegOrInt
   deriving Show
 
 regP = letter
 
-numberP = read <$> many1 (digit <|> char '-')
+regOrValP = Left <$> regP <|> Right <$> int
 
-regOrValP = Left <$> regP <|> Right <$> numberP
-
-instrP = try (Snd <$> (string "snd " *> regOrValP)) <|>
+instrP = try (Snd <$> (string "snd " *> regOrValP))                     <|>
          try (Set <$> (string "set " *> regP) <*> (space *> regOrValP)) <|>
          try (Add <$> (string "add " *> regP) <*> (space *> regOrValP)) <|>
          try (Mul <$> (string "mul " *> regP) <*> (space *> regOrValP)) <|>
          try (Mod <$> (string "mod " *> regP) <*> (space *> regOrValP)) <|>
-         try (Rcv <$> (string "rcv " *> regP)) <|>
+         try (Rcv <$> (string "rcv " *> regP))                          <|>
          try (Jgz <$> (string "jgz " *> regOrValP) <*> (space *> regOrValP))
 
 instrs = either undefined id . parse instrP ""
 
-initRegs programID = replicate (ord 'z' - ord 'a' - 1) 0 // [(index 'p', programID)]
+indexOf r = ord r - 97
 
-index r = ord r - 97
+initRegs programID = update (indexOf 'p') programID $ Seq.fromList $ fmap (const 0) ['a'..'z']
 
-get_ regs r = regs ! index r
-get regs (Left r) = regs ! index r
+get_ regs r       = regs `index` indexOf r
+get regs (Left r) = regs `index` indexOf r
 get _   (Right v) = v
 
 eval _ sndQueue sends regs (Snd regOrVal) = do
-  let s = get regs regOrVal
+  let value = get regs regOrVal
   Just prev <- tryTakeMVar sends
   putMVar sends (prev+1)
-  writeChan sndQueue s
+  writeChan sndQueue value
   return (regs,1)
-eval _ _        _ regs (Set reg regOrVal) = return (regs // [(index reg, get regs regOrVal)],1)
-eval _ _        _ regs (Add reg regOrVal) = return (regs // [(index reg, get_ regs reg + get regs regOrVal)],1)
-eval _ _        _ regs (Mul reg regOrVal) = return (regs // [(index reg, get_ regs reg * get regs regOrVal)],1)
-eval _ _        _ regs (Mod reg regOrVal) = return (regs // [(index reg, get_ regs reg `mod` get regs regOrVal)],1)
+eval _ _        _ regs (Set reg regOrVal) = return (update (indexOf reg) (get regs regOrVal) regs,1)
+eval _ _        _ regs (Add reg regOrVal) = return (update (indexOf reg) (get_ regs reg + get regs regOrVal) regs,1)
+eval _ _        _ regs (Mul reg regOrVal) = return (update (indexOf reg) (get_ regs reg * get regs regOrVal) regs,1)
+eval _ _        _ regs (Mod reg regOrVal) = return (update (indexOf reg) (get_ regs reg `mod` get regs regOrVal) regs,1)
 eval rcvQueue _ _ regs (Rcv reg) = do
   val <- readChan rcvQueue
-  return (regs // [(index reg, val)],1)
-eval _ _        _ regs (Jgz regOrVal os) | get regs regOrVal > 0 = return (regs,get regs os)
-eval _ _        _ regs (Jgz _ _)                                 = return (regs,1)
+  return (update (indexOf reg) val regs,1)
+eval _ _        _ regs (Jgz regOrVal offset) | get regs regOrVal > 0 = return (regs,get regs offset)
+eval _ _        _ regs (Jgz _ _)                                     = return (regs,1)
 
-evalProg rcvQueue sndQueue sends prog regs loc                      = do
-  e <- eval rcvQueue sndQueue sends regs (prog ! loc)
-  case e of
-    (rs,offset) -> evalProg rcvQueue sndQueue sends prog rs (loc+offset)
+evalProg rcvQueue sndQueue sends prog regs loc = do
+  (newRegs,offset) <- eval rcvQueue sndQueue sends regs (prog `index` loc)
+  evalProg rcvQueue sndQueue sends prog newRegs (loc+offset)
 
 solve1 inp = do
   rcvQueue <- newChan
   sndQueue <- newChan
-  writeChan sndQueue 42
+  writeChan sndQueue undefined
   sends <- newMVar 0
-  let res = evalProg rcvQueue sndQueue sends (instrs <$> inp) (initRegs 0) 0
+  let res = evalProg rcvQueue sndQueue sends (fmap instrs inp) (initRegs 0) 0
   catch res $ \BlockedIndefinitelyOnMVar -> do
     times <- takeMVar sends
     fmap last $ replicateM (times+1) $ readChan sndQueue
@@ -87,8 +87,8 @@ solve2 inp = do
     sndQueue <- newChan
     snd1 <- newMVar (0::Int)
     snd2 <- newMVar (0::Int)
-    let res1 = evalProg rcvQueue sndQueue snd1 (instrs <$> inp) (initRegs 0) 0
-    let res2 = evalProg sndQueue rcvQueue snd2 (instrs <$> inp) (initRegs 1) 0
+    let res1 = evalProg rcvQueue sndQueue snd1 (fmap instrs inp) (initRegs 0) 0
+    let res2 = evalProg sndQueue rcvQueue snd2 (fmap instrs inp) (initRegs 1) 0
     (_,wait1) <- Thread.forkIO $ res1
     (_,wait2) <- Thread.forkIO $ res2
     catch wait1 (\BlockedIndefinitelyOnMVar -> return undefined)

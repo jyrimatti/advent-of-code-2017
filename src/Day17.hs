@@ -6,15 +6,14 @@ import Data.Sequence (singleton,length,index,elemIndexL,splitAt,(><),(<|))
 
 input = 371
 
-step iterations buffer _     _       position | position == (iterations+1) = buffer
+step iterations buffer _   _       position | position == (iterations+1) = buffer
 step iterations buffer inp current position = let
-  newPos = ((current + inp) `mod` (length buffer)) + 1
+  newPos          = (current + inp) `mod` length buffer + 1
   (prefix,suffix) = splitAt newPos buffer
- in step iterations (prefix >< (position <| suffix)) inp newPos $! (position + 1)
+ in step iterations (prefix >< (position <| suffix)) inp newPos $! position + 1
 
-solve :: Int -> Int -> Int -> Int
 solve endValue iterations inp = let
-  res = step iterations (singleton 0) inp 0 1 
+  res = step iterations (singleton 0) inp 0 (1 :: Int) 
  in res `index` (1 + fromJust (elemIndexL endValue res))
 
 solve_test = solve 2017 2017 3

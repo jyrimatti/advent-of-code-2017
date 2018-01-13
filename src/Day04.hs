@@ -1,21 +1,22 @@
 module Day04 where
   
-import Data.Set (fromList, intersection, delete)
+import Data.Set (intersection, delete)
+import qualified Data.Set as Set (fromList)
 import Data.List (permutations)
 
 input = lines <$> readFile "input/input04.txt"
 
 isValid str = let 
   ws = words str
-  distinct = fromList ws
+  distinct = Set.fromList ws
  in
   length ws == length distinct
  
 solve f = length . filter f
 
 isValid2 str = let
-  distinct = fromList $ words str
-  anagrams s = delete s $ fromList $ permutations s
+  distinct = Set.fromList $ words str
+  anagrams s = delete s . Set.fromList . permutations $ s
   valid = null . intersection distinct . anagrams
  in
   isValid str && all valid distinct

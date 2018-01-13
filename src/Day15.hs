@@ -26,9 +26,9 @@ calcBoth a b = zip (calc (const True) factorA a) (calc (const True) factorB b)
 
 calcBoth2 aa b = zip (calc (\a -> (a `mod` 4) == 0) factorA aa) (calc (\a -> (a `mod` 8) == 0) factorB b)
 
-solve1 a b = length $ filter (uncurry (==)) $ take 40000000 $ calcBoth a b
+solve1 a b = length . filter (uncurry (==)) . take 40000000 $ calcBoth a b
 
-solve2 a b = length $ filter (uncurry (==)) $ take 5000000 $ calcBoth2 a b
+solve2 a b = length . filter (uncurry (==)) . take 5000000 $ calcBoth2 a b
 
 solution1 = solve1 inputA inputB
 

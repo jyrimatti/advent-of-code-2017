@@ -1,13 +1,14 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Day16 where
 
-import Prelude hiding (length,(++),take)
+import Prelude hiding (length,(++),take,drop)
 import Control.Applicative ((<|>))
 import Text.Parsec (parse,many1)
 import Text.Parsec.String (Parser)
 import Text.Parsec.Char (char,digit,letter)
 import Text.Parsec.Combinator (sepBy1)
-import Data.Vector (fromList,slice,length,(++),take,(//),(!),elemIndex)
+import qualified Data.Vector.Unboxed as Vec (fromList)
+import Data.Vector.Unboxed (length,(++),take,drop,(//),(!),elemIndex)
 import Data.Function (on)
 import Data.Char (chr)
 import Data.Maybe (fromJust)
@@ -30,9 +31,11 @@ danceP = stepP `sepBy1` (char ',')
 
 stepP = spinP <|> exchangeP <|> partnerP
 
-spinP = Spin . read <$> (char 's' *> many1 digit)
+numberP = many1 digit
 
-exchangeP = on Exchange read <$> (char 'x' *> many1 digit) <*> (char '/' *> many1 digit)
+spinP = Spin . read <$> (char 's' *> numberP)
+
+exchangeP = on Exchange read <$> (char 'x' *> numberP) <*> (char '/' *> numberP)
 
 partnerP = Partner <$> (char 'p' *> letter) <*> (char '/' *> letter)
 
@@ -41,25 +44,21 @@ partnerP = Partner <$> (char 'p' *> letter) <*> (char '/' *> letter)
 dance = either undefined id . parse danceP ""
 
 name2index name = fromJust . elemIndex name
-index2name = chr . (\n -> n + 97)
+index2name = chr . (+ 97)
 
-eval (Spin x) ps = (slice (length ps - x) x ps) ++ (take (length ps - x) ps)
+eval (Spin x) ps = take (length ps) $ drop (length ps - x) ps ++ ps
 
-eval (Exchange i1 i2) ps = let
-  e1 = ps ! i1
-  e2 = ps ! i2
- in
-  ps // [(i1,e2),(i2,e1)]
+eval (Exchange i1 i2) ps = ps // [(i1, ps ! i2),(i2, ps ! i1)]
 
 eval (Partner c1 c2) ps = eval (Exchange (name2index c1 ps) (name2index c2 ps)) ps
 
-programs n = fromList $ fmap index2name [0..n-1]
+programs n = Vec.fromList $ fmap index2name [0..n-1]
 
 solve initialRepeat initialProgs inp = solve_ 0 initialProgs (dance inp)
-  where solve_ rep progs _ | rep == initialRepeat = progs
+  where solve_ rep progs _ | rep == initialRepeat                     = progs
         -- let's assume the program eventually repeat themselves, so we can exit early...
         solve_ rep progs _ | rep /= (0::Int) && progs == initialProgs = solve (initialRepeat `mod` rep) initialProgs inp
-        solve_ rep progs dan = solve_ (rep+1) (foldl' (flip eval) progs dan) dan
+        solve_ rep progs dan                                          = solve_ (rep+1) (foldl' (flip eval) progs dan) dan
 
 solve1 = solve 1 (programs 16)
 solve2 = solve 1000000000 (programs 16)

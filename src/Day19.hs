@@ -1,50 +1,61 @@
+{-# LANGUAGE FlexibleContexts, TupleSections #-}
 module Day19 where
 
-import Prelude hiding ()
-import Data.Vector (fromList,(!),elemIndex)
+import Prelude hiding ((!!))
+import Data.Vector.Unboxed (elemIndex)
+import Data.Matrix.Unboxed (Matrix,(!),fromLists,takeRow,rows,cols)
 import Data.Maybe (fromJust)
 import Data.List ((\\),unfoldr)
+import Data.Tuple (swap)
 
 type Coord = (Int,Int)
 
-parse = fmap fromList <$> fromList <$> lines
+parse :: String -> Matrix Char
+parse = fromLists <$> lines
 
-input = parse <$> readFile "input/input19.txt"
+input      = parse <$> readFile "input/input19.txt"
 input_test = parse <$> readFile "input/input19_test.txt"
 
-start inp = (fromJust $ elemIndex '|' $ inp ! 0, 0)
+start = (,0) . fromJust . elemIndex '|' . flip takeRow 0
 
-adjacent width height (x,y) = filter (\(aa,bb) -> aa >= 0 && bb >= 0 && aa < width && bb < height) [(x-1,y),(x,y-1),(x+1,y),(x,y+1)]
+withinBounds width height (x,y) = x >= 0 && y >= 0 && x < width && y < height
 
-get inp (x,y) = inp ! y ! x
+adjacent width height (x,y) = filter (withinBounds width height) [(x-1,y),(x,y-1),(x+1,y),(x,y+1)]
 
-(x,y) .+ (a,b) = (x+a,y+b)
-(x,y) .- (a,b) = (x-a,y-b)
+(!!) inp = (inp !) . swap
 
-nonempty inp = filter $ (/= ' ') . get inp
+(x,y) +.+ (a,b) = (x+a,y+b)
+(x,y) -.- (a,b) = (x-a,y-b)
+
+nonempty inp = filter $ (/= ' ') . (inp !!)
 
 direction _     loc inp | loc == start inp = (0,1)
-direction prevs loc inp                    = case nonempty inp $ adjacent (length $ inp ! 0) (length inp) loc of
+direction prevs loc inp                    = case nonempty inp $ adjacent (cols inp) (rows inp) loc of
     [_]    -> (0,0) -- in goal!
-    double -> let [c] = double \\ prevs in c .- loc
+    double -> let
+                [c] = double \\ prevs
+              in
+                c -.- loc
 
-line diff = unfoldr $ \loc -> Just (loc, loc .+ diff)
+line diff = unfoldr $ \loc -> Just (loc, loc +.+ diff)
 
-untilTurnOrEnd inp = takeWhile $ \c -> not $ get inp c `elem` "+ "
+isOneOf = flip elem
 
-filterLetters inp = filter $ \c -> get inp c `elem` ['A'..'Z']
+untilTurnOrEnd inp = takeWhile $ not . isOneOf ['+',' '] . (inp !!)
+
+filterLetters inp = filter $ isOneOf ['A'..'Z'] . (inp !!)
 
 walk inp prevs loc = let
     dir = direction prevs loc inp
     steps = untilTurnOrEnd inp $ line dir loc
-    letters = get inp <$> (filterLetters inp) steps
-    final = last (loc : steps) .+ dir
+    letters = fmap (inp !!) $ (filterLetters inp) steps
+    final = last (loc : steps) +.+ dir
     count = if length steps == 0 then 0 else length steps + 1
   in
-    if dir == (0,0)
-      then ([],-1)
-      else let (lx,c) = walk inp (loc : steps) final
-            in (letters ++ lx, count + c)
+    case dir of
+      (0,0) -> ([],-1)
+      _     -> let (lx,c) = walk inp (loc : steps) final
+                in (letters ++ lx, count + c)
 
 solve inp = walk inp [] (start inp)
 

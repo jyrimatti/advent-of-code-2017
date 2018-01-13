@@ -4,11 +4,12 @@ import Data.Char (digitToInt)
 
 input = readFile "input/input01.txt"
 
-pairs inp = zip inp (tail inp ++ [head inp])
+calculate = sum . fmap digitToInt . fmap fst . filter (uncurry (==))
 
-calculate = sum . map digitToInt . map fst . filter (uncurry (==))
+pairs toSkip inp = zip inp $ drop toSkip (cycle inp)
 
-pairs2 inp = zip inp (drop (length inp `div` 2) inp ++ inp)
+solve1     = calculate . pairs 1
+solve2 inp = calculate $ pairs (length inp `div` 2) inp
 
-solution1 = calculate <$> pairs <$> input
-solution2 = calculate <$> pairs2 <$> input
+solution1 = solve1 <$> input
+solution2 = solve2 <$> input

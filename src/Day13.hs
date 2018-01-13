@@ -1,19 +1,19 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Day13 where
 
-import Data.Text (splitOn,pack,unpack)
 import Data.List (find)
 import Data.Maybe (fromJust)
+import Text.Regex.Applicative
+import Text.Regex.Applicative.Common
 
 data Layer = Layer {
   depth :: Int,
   range :: Int
 }
 
-input = lines <$> readFile "input/input13.txt"
+input      = lines <$> readFile "input/input13.txt"
 input_test = lines <$> readFile "input/input13_test.txt"
 
-layers = fmap (\[a,b] -> Layer a b) . fmap (fmap (read . unpack) <$> splitOn ":" . pack)
+layerP = fromJust . match (Layer <$> decimal <* string ": " <*> decimal)
 
 hasScanner (Layer _ r) time = time `mod` ((r - 1) * 2) == 0
 
@@ -25,12 +25,12 @@ caught delay layer = hasScanner layer $ timeAt delay layer
 
 tripSeverity delay = sum . fmap severity . filter (caught delay)
 
-solve1 = tripSeverity 0 . layers
+solve1 = tripSeverity 0 . fmap layerP
 
 solve2 inp = let
-  ls = layers inp
+  layers = fmap layerP inp
  in
-  fromJust $ find (\delay -> not $ any (caught delay) ls) [0..]
+  fromJust $ find (\delay -> not $ any (caught delay) layers) [0..]
 
 solution1 = solve1 <$> input
 solution2 = solve2 <$> input
