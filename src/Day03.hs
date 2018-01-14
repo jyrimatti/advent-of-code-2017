@@ -3,33 +3,35 @@ module Day03 where
 import Data.Maybe (fromJust)
 import Data.Foldable
 
+-- this is a mess...
+
 input = 361527
 
-squaresOnLevel level = 4 * (level * 2 - 1 + 1)
+squaresOnLevel level = 4 * level * 2
 
-totalSquares 0 = 1
-totalSquares level = totalSquares (level - 1) + squaresOnLevel level
+squaresUpToLevel 0 = 1
+squaresUpToLevel level = squaresUpToLevel (level - 1) + squaresOnLevel level
 
-levelOf square = length $ takeWhile (< square) $ fmap totalSquares [0..]
+levelOf square = length $ takeWhile (< square) $ fmap squaresUpToLevel [0..]
 
 startingDistance level = (-1) * (level - 1)
 
 distanceFromMiddle level i = startingDistance level + (i `mod` (squaresOnLevel level `div` 4))
 
-index square = square - totalSquares (levelOf square - 1) - 1
+indexOfSquareOnLevel square = square - squaresUpToLevel (levelOf square - 1) - 1
 
-distance 1 = 0
-distance square = let 
+distanceFromAccessPort 1 = 0
+distanceFromAccessPort square = let 
   level = levelOf square
  in
-  level + (abs . distanceFromMiddle level . index) square
+  level + (abs . distanceFromMiddle level . indexOfSquareOnLevel) square
 
 row 1 = 0
 row square = let
   level = levelOf square
   foo = squaresOnLevel level `div` 8
  in  
-  case startingDistance level + index square of
+  case startingDistance level + indexOfSquareOnLevel square of
     i | i <= foo                 -> i
     i | i > foo && i <= foo*3    -> level
     i | i > foo*3 && i <= foo*5  -> (squaresOnLevel level `div` 2) - i
@@ -40,7 +42,7 @@ column square = let
   level = levelOf square
   foo = squaresOnLevel level `div` 8
  in  
-  case startingDistance level + index square of
+  case startingDistance level + indexOfSquareOnLevel square of
     i | i <= foo                -> level
     i | i > foo && i <= foo*3   -> (foo*2) - i
     i | i > foo*3 && i <= foo*5 -> (-1) * level
@@ -54,7 +56,7 @@ sumValue previous square = sum $ fmap (\s -> snd $ fromJust $ find ((==) s . fst
 
 sumValues = reverse . fmap snd . foldr (\x xs -> (x,sumValue xs x) : xs) [] . reverse $ [1..2000]
 
-solve1 = distance
+solve1 = distanceFromAccessPort
 solve2 inp = head $ dropWhile (<= inp) sumValues
 
 solution1 = solve1 input

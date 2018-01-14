@@ -15,9 +15,9 @@ type Coord = (Int,Int,Int)
 toList (a,b,c) = [a,b,c]
 
 data Particle = Particle {
-    position :: Coord,
-    velocity :: Coord,
-    acceleration :: Coord
+    _position :: Coord,
+    _velocity :: Coord,
+    _acceleration :: Coord
 } deriving Show
 
 particleP = Particle <$> (string "p=" *> coord <* string ", ")
@@ -32,7 +32,7 @@ particle = either undefined id . parse particleP ""
 
 update (Particle (px,py,pz) (vx,vy,vz) (ax,ay,az)) = Particle (px+vx+ax,py+vy+ay,pz+vz+az) (vx+ax,vy+ay,vz+az) (ax,ay,az)
 
-manhattan = sum . fmap abs . toList . position
+manhattan = sum . fmap abs . toList . _position
 
 steps filt particles = unfoldr (\ps -> Just (ps, filt $ fmap update ps)) particles
 
@@ -43,7 +43,7 @@ smallestDistance = minimumBy (compare `on` snd)
 -- ugh, assuming 10000 is enough...
 solve1 = (!! 5000) . fmap (fst . smallestDistance . withIndex . withDistance) . steps id . fmap particle
 
-removeColliding = concat . filter ((== 1) . length) . groupBy ((==) `on` position) . sortBy (compare `on` position)
+removeColliding = concat . filter ((== 1) . length) . groupBy ((==) `on` _position) . sortBy (compare `on` _position)
 
 -- ugh, assuming 10000 is enough...
 solve2 = (!! 5000) . fmap length . steps removeColliding . fmap particle

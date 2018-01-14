@@ -4,22 +4,26 @@ import Data.Bifunctor (bimap)
 import Data.Semigroup (Max(..),Min(..))
 import Data.Tuple.Extra ((&&&))
 
-parse = fmap (fmap read) . fmap words . lines
+parseSpreadsheet = fmap (fmap read) . fmap words . lines
 
-input       = parse <$> readFile "input/input02.txt"
-input_test1 = parse <$> readFile "input/input02_test1.txt"
-input_test2 = parse <$> readFile "input/input02_test2.txt"
+input       = parseSpreadsheet <$> readFile "input/input02.txt"
+input_test1 = parseSpreadsheet <$> readFile "input/input02_test1.txt"
+input_test2 = parseSpreadsheet <$> readFile "input/input02_test2.txt"
 
-row :: [Int] -> Int
-row = uncurry (-) . bimap getMax getMin . foldMap (Max &&& Min)
- 
-row2 inp = do
-  x <- inp
-  y <- inp
-  if (x /= y && x `mod` y == 0) then return (x `div` y) else return 0
+-- difference between maximum and minimum value of a row
+rowDifference :: [Int] -> Int
+rowDifference = uncurry (-) . bimap getMax getMin . foldMap (Max &&& Min)
 
-solve1 = sum . fmap row
-solve2 = sum . fmap (sum . row2)
+-- division of row numbers that are evenly divisible by each other
+rowDivision inp = sum $ do
+  a <- inp
+  b <- filter (/= a) $ inp
+  return $ case a `mod` b of
+    0 -> a `div` b
+    _ -> 0
+
+solve1 = sum . fmap rowDifference
+solve2 = sum . fmap rowDivision
 
 solution1 = solve1 <$> input
 solution2 = solve2 <$> input

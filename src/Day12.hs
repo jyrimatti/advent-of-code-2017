@@ -16,8 +16,8 @@ input      = lines <$> readFile "input/input12.txt"
 input_test = lines <$> readFile "input/input12_test.txt"
 
 data Prog = Prog {
-  _name      :: String,
-  _neighbors :: [String]
+  _progName      :: String,
+  _progNeighbors :: [String]
 } deriving Show
 
 progP = Prog <$> nameP <*> (string " <-> " *> nameP `sepBy1` (string ", "))
@@ -25,13 +25,13 @@ progP = Prog <$> nameP <*> (string " <-> " *> nameP `sepBy1` (string ", "))
 nameP = many1 $ noneOf ", "
 
 data Program = Program {
-  name      :: String,
-  neighbors :: [Program]
+  _name      :: String,
+  _neighbors :: [Program]
 } deriving Show
 
 prog = either undefined id . parse progP ""
 
-progsMap = Map.fromList . fmap (_name &&& id) . fmap prog
+progsMap = Map.fromList . fmap (_progName &&& id) . fmap prog
 
 enhance pMap (Prog n ns) = Program n $ fmap (enhance pMap . (pMap !)) ns
 

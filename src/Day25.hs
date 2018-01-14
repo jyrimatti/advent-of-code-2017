@@ -14,22 +14,22 @@ input      = readFile "input/input25.txt"
 input_test = readFile "input/input25_test.txt"
 
 data Instructions = Instructions {
-    beginState :: Char,
-    endInSteps :: Int,
-    states     :: [State]
+    _beginState :: Char,
+    _endInSteps :: Int,
+    _states     :: [State]
 } deriving Show
 
 data State = State {
-    name   :: Char,
-    phase0 :: Phase,
-    phase1 :: Phase
+    _name   :: Char,
+    _phase0 :: Phase,
+    _phase1 :: Phase
 } deriving Show
 
 data Phase = Phase {
-    condition :: Int,
-    output    :: Int,
-    direction :: Int,
-    nextState :: Char
+    _condition :: Int,
+    _output    :: Int,
+    _direction :: Int,
+    _nextState :: Char
 } deriving Show
 
 ws = many space
@@ -57,7 +57,7 @@ extend _   vec                             = vec
 
 run 0          (neg,pos) _   _ _  = (reverse $ tail $ toList neg, toList pos)
 run iterations (neg,pos) loc s ss = let
-    Just (State _ p0 p1) = find ((== s) . name) ss
+    Just (State _ p0 p1) = find ((== s) . _name) ss
     !curValue = if loc < 0 then neg `index` abs loc else pos `index` loc
     Phase _ out dir newState = if curValue == 0 then p0 else p1
     !newTape = (if loc < 0 then update (abs loc) out (extend loc neg) else neg,

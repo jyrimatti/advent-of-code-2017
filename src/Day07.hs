@@ -15,9 +15,9 @@ input      = lines <$> readFile "input/input07.txt"
 input_test = lines <$> readFile "input/input07_test.txt"
 
 data Prog = Prog {
-  _name     :: String,
-  _weight   :: Int,
-  _subnames :: [String]
+  _progName     :: String,
+  _progWeight   :: Int,
+  _progSubnames :: [String]
 } deriving Show
 
 progP = Prog <$> (nameP <* space) <*> weightP <*> (optional (string " -> ") *> subnamesP)
@@ -30,12 +30,12 @@ subnamesP = many1 letter `sepBy` string ", "
 
 prog = either undefined id . parse progP ""
   
-progsMap = Map.fromList . fmap (_name &&& id) . fmap prog
+progsMap = Map.fromList . fmap (_progName &&& id) . fmap prog
   
 data Program = Program {
-  name   :: String,
-  weight :: Int,
-  subs   :: [Program]
+  _name   :: String,
+  _weight :: Int,
+  _subs   :: [Program]
 } deriving Show
 
 enhance pMap (Prog n w s) = Program n w $ fmap (enhance pMap . (!) pMap) s
@@ -47,7 +47,7 @@ programs inp = let
 
 root inp = let
   prgs = programs inp
-  allSubs = foldMap (fmap name . subs) $ elems prgs
+  allSubs = foldMap (fmap _name . _subs) $ elems prgs
  in
   prgs ! (head $ keys prgs \\ allSubs)
 
@@ -61,9 +61,9 @@ weightUnbalance (Program _ _ ss) = let
  in
   case foldMap weightUnbalance ss of
     [x] -> [x]
-    [] -> fmap (uncurry (+) . bimap weight (snd commonWeight - )) unbalanced
+    [] -> fmap (uncurry (+) . bimap _weight (snd commonWeight - )) unbalanced
 
-solve1 = name . root
+solve1 = _name . root
 solve2 = head . weightUnbalance . root
 
 solution1 = solve1 <$> input

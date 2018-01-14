@@ -10,10 +10,14 @@ modifyOffset1 = (+ 1)
 modifyOffset2 x | x >= 3 = x - 1
 modifyOffset2 x          = modifyOffset1 x
 
-step _              stepnum i _    | i < 0            = stepnum
-step _              stepnum i sequ | i >= length sequ = stepnum
-step offsetModifier stepnum i sequ                    = step offsetModifier (stepnum+1) (i + sequ `index` i) (adjust offsetModifier i sequ)
+step _              steps instruction _       | instruction < 0               = steps
+step _              steps instruction program | instruction >= length program = steps
+step offsetModifier steps instruction program                                 = step offsetModifier
+                                                                                     (steps+1)
+                                                                                     (instruction + program `index` instruction)
+                                                                                     (adjust offsetModifier instruction program)
 
+-- solve with a given modification function for current offset
 solve offsetModifier = step offsetModifier (0::Int) 0 . Seq.fromList
 
 solve1 = solve modifyOffset1

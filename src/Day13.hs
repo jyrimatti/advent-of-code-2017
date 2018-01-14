@@ -7,8 +7,8 @@ import Text.Regex.Applicative
 import Text.Regex.Applicative.Common
 
 data Layer = Layer {
-  depth :: Int,
-  range :: Int
+  _depth :: Int,
+  _range :: Int
 }
 
 input      = lines <$> readFile "input/input13.txt"
