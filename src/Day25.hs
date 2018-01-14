@@ -1,13 +1,14 @@
 {-# LANGUAGE BangPatterns #-}
 module Day25 where
 
-import Prelude hiding (replicate,length,(++))
+import Prelude hiding (replicate)
+import Data.Foldable (toList)
+import Data.Tuple.Extra (both)
+import Data.List (find)
+import Data.Sequence (update,replicate,index,(|>))
+
 import Text.Parsec (parse,many,(<|>),try)
 import Text.Parsec.Char (string,noneOf,anyChar,char,space)
-import Data.List (find)
-import Data.Tuple.Extra (both)
-import Data.Foldable (toList)
-import Data.Sequence (update,replicate,length,index,(|>))
 
 input      = readFile "input/input25.txt"
 input_test = readFile "input/input25_test.txt"

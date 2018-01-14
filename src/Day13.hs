@@ -1,7 +1,8 @@
 module Day13 where
 
-import Data.List (find)
 import Data.Maybe (fromJust)
+import Data.List (find)
+
 import Text.Regex.Applicative
 import Text.Regex.Applicative.Common
 

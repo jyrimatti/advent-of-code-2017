@@ -1,16 +1,16 @@
 {-# LANGUAGE BangPatterns #-}
 module Day23 where
     
-import Prelude hiding (null,replicate,last)
 import Data.Char (ord)
+import Data.Numbers.Primes (isPrime)
+import qualified Data.Vector as Vec (fromList)
+import Data.Vector ((!))
+import qualified Data.Sequence as Seq (fromList)
+import Data.Sequence (index,update)
+
 import Text.Parsec (parse,(<|>),try)
 import Text.Parsec.Char (string,letter,space)
 import Text.ParserCombinators.Parsec.Number (int)
-import Data.Vector ((!))
-import qualified Data.Vector as Vec (fromList)
-import Data.Numbers.Primes (isPrime)
-import Data.Sequence (index,update)
-import qualified Data.Sequence as Seq (fromList)
 
 input = lines <$> readFile "input/input23.txt"
 

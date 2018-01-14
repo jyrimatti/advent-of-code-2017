@@ -1,10 +1,10 @@
 module Day06 where
 
-import qualified Data.Vector.Unboxed as Vec (fromList,length)
-import Data.Vector.Unboxed (maxIndex,(!),(//))
-import Data.List (elemIndex,find)
 import Data.Maybe (isJust,fromJust)
 import Data.Bifunctor (first)
+import Data.List (elemIndex,find)
+import qualified Data.Vector.Unboxed as Vec (fromList,length)
+import Data.Vector.Unboxed (maxIndex,(!),(//))
 
 input = fmap read <$> words <$> readFile "input/input06.txt"
 

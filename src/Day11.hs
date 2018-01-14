@@ -1,8 +1,9 @@
 module Day11 where
 
-import Algorithm.Search (aStar)
-import Data.Text (splitOn,pack,unpack)
 import Data.Maybe (fromJust)
+import Data.Text (splitOn,pack,unpack)
+
+import Algorithm.Search (aStar)
 
 input = fmap unpack . splitOn (pack ",") . pack <$> readFile "input/input11.txt"
 

@@ -1,6 +1,6 @@
 module Day08 where
 
-import System.Process
+import System.Process (callCommand)
 
 solve1_1 = callCommand "\
   \ cat input/input08.txt | \

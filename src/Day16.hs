@@ -3,16 +3,18 @@ module Day16 where
 
 import Prelude hiding (length,(++),take,drop)
 import Control.Applicative ((<|>))
-import Text.Parsec (parse,many1)
-import Text.Parsec.String (Parser)
-import Text.Parsec.Char (char,digit,letter)
-import Text.Parsec.Combinator (sepBy1)
-import qualified Data.Vector.Unboxed as Vec (fromList)
-import Data.Vector.Unboxed (length,(++),take,drop,(//),(!),elemIndex)
 import Data.Function (on)
 import Data.Char (chr)
 import Data.Maybe (fromJust)
 import Data.Foldable (foldl')
+
+import qualified Data.Vector.Unboxed as Vec (fromList)
+import Data.Vector.Unboxed (length,(++),take,drop,(//),(!),elemIndex)
+
+import Text.Parsec (parse,many1)
+import Text.Parsec.String (Parser)
+import Text.Parsec.Char (char,digit,letter)
+import Text.Parsec.Combinator (sepBy1)
 
 input = readFile "input/input16.txt"
 

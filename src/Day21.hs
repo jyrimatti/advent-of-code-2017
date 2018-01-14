@@ -1,14 +1,14 @@
 module Day21 where
 
-import Prelude hiding (flip)
+import Data.Bifunctor (bimap)
+import Data.Maybe (fromJust)
+import Data.List (find)
+import Data.List.Split (chunksOf)
+import Data.Matrix.Unboxed (Matrix,fromLists,force,tr,toList,toLists,rows,subMatrix,fromBlocks)
+
 import Text.Parsec (parse,many1)
 import Text.Parsec.Char (string,noneOf,char)
 import Text.Parsec.Combinator (sepBy1)
-import Data.Matrix.Unboxed (Matrix,fromLists,force,tr,toList,toLists,rows,subMatrix,fromBlocks)
-import Data.List (find)
-import Data.List.Split (chunksOf)
-import Data.Maybe (fromJust)
-import Data.Bifunctor (bimap)
 
 initial = fromLists $ fmap (fmap toBool) $ [".#.","..#","###"]
 
@@ -28,8 +28,8 @@ variants p = [p] ++ rotations p ++ foldMap rotations (flips p)
 rotations p = [rotate p, rotate $ rotate p, rotate $ rotate $ rotate p]
 rotate = tr . fromLists . reverse . toLists
 
-flips p = [flip p, tr $ flip $ tr p]
-flip = fromLists . reverse . toLists
+flips p = [flipMatrix p, tr $ flipMatrix $ tr p]
+flipMatrix = fromLists . reverse . toLists
 
 allRules = foldMap $ (uncurry zip . bimap variants repeat) . either undefined id . parse ruleP ""
 

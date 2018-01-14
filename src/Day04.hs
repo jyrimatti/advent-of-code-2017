@@ -1,8 +1,8 @@
 module Day04 where
-  
+
+import Data.List (permutations)
 import Data.Set (intersection, delete)
 import qualified Data.Set as Set (fromList)
-import Data.List (permutations)
 
 input = lines <$> readFile "input/input04.txt"
 

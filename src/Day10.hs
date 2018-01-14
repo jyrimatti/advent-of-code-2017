@@ -2,10 +2,10 @@
 module Day10 where
 
 import Data.Char (ord)
-import Data.List.Split (chunksOf)
 import Data.Bits (xor)
 import Numeric (showHex)
 import Data.Text (splitOn,pack,unpack)
+import Data.List.Split (chunksOf)
 
 parse1 = fmap read <$> fmap unpack . splitOn "," . pack
 parse2 = id

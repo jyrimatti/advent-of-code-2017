@@ -1,14 +1,15 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Day07 where
 
+import Data.Bifunctor (bimap)
+import Data.Tuple.Extra ((&&&))
+import Data.List ((\\),nubBy,deleteBy)
+import qualified Data.Map.Strict as Map (fromList)
+import Data.Map.Strict ((!),elems,keys)
+
 import Text.Parsec (parse,many,many1,optional)
 import Text.Parsec.Char (char,space,string,letter,digit)
 import Text.Parsec.Combinator (between,sepBy)
-import qualified Data.Map.Strict as Map (fromList)
-import Data.Map.Strict ((!),elems,keys)
-import Data.List ((\\),nubBy,deleteBy)
-import Data.Tuple.Extra ((&&&))
-import Data.Bifunctor (bimap)
   
 input      = lines <$> readFile "input/input07.txt"
 input_test = lines <$> readFile "input/input07_test.txt"

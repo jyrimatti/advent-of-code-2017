@@ -1,11 +1,12 @@
 module Day20 where
 
-import Text.Parsec (parse,between)
-import Text.Parsec.Char (string,char)
-import Text.ParserCombinators.Parsec.Number (int)
 import Data.Foldable (minimumBy)
 import Data.Function (on)
 import Data.List (unfoldr,groupBy,sortBy)
+
+import Text.Parsec (parse,between)
+import Text.Parsec.Char (string,char)
+import Text.ParserCombinators.Parsec.Number (int)
 
 input = lines <$> readFile "input/input20.txt"
 

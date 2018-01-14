@@ -1,11 +1,12 @@
 {-# LANGUAGE FlexibleContexts, TupleSections #-}
 module Day09 where
 
+import Data.Tuple.Extra ((&&&))
+
 import Text.Parsec (parse,many,(<|>),notFollowedBy,noneOf,eof)
 import Text.Parsec.String (Parser)
 import Text.Parsec.Char (char,anyChar)
 import Text.Parsec.Combinator (between,sepBy1)
-import Data.Tuple.Extra ((&&&))
 
 input = readFile "input/input09.txt"
 

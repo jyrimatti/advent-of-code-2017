@@ -1,8 +1,7 @@
 module Day05 where
-  
-import Prelude hiding (length)
+
 import qualified Data.Sequence as Seq (fromList)
-import Data.Sequence (index,adjust,length)
+import Data.Sequence (index,adjust)
 
 input = fmap read <$> lines <$> readFile "input/input05.txt"
 

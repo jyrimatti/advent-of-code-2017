@@ -1,14 +1,16 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Day12 where
 
-import Text.Parsec (parse,many1)
-import Text.Parsec.Char (string, noneOf)
-import Text.Parsec.Combinator (sepBy1)
+import Data.Tuple.Extra ((&&&))
+
 import qualified Data.Map.Strict as Map (fromList)
 import Data.Map.Strict ((!),elems)
 import Data.HashSet (empty,member,insert)
 import Data.List (nub)
-import Data.Tuple.Extra ((&&&))
+
+import Text.Parsec (parse,many1)
+import Text.Parsec.Char (string, noneOf)
+import Text.Parsec.Combinator (sepBy1)
   
 input      = lines <$> readFile "input/input12.txt"
 input_test = lines <$> readFile "input/input12_test.txt"

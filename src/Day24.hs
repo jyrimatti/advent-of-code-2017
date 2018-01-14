@@ -4,11 +4,11 @@ module Day24 where
 import Prelude hiding (readFile,lines)
 import Data.Text (Text,splitOn,lines,unpack)
 import Data.Text.IO (readFile)
-import Data.List (delete,sortBy,groupBy,maximumBy)
-import Data.Ord (comparing)
 import Data.Tuple (swap)
 import Data.Tuple.Extra ((&&&))
 import Data.Function (on)
+import Data.Ord (comparing)
+import Data.List (delete,sortBy,groupBy,maximumBy)
 
 input      = readFile "input/input24.txt"
 input_test = readFile "input/input24_test.txt"

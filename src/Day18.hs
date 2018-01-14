@@ -1,18 +1,18 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 module Day18 where
 
-import Prelude hiding (null,replicate)
 import Data.Char (ord)
+import qualified Data.Sequence as Seq (fromList)
+import Data.Sequence (index,update)
+
+import Control.Monad (replicateM)
+import Control.Exception.Base (catch,BlockedIndefinitelyOnMVar(..))
+import Control.Concurrent.Thread (forkIO)
+import Control.Concurrent.Chan (newChan,writeChan,readChan)
+import Control.Concurrent.MVar (newMVar,takeMVar,tryTakeMVar,putMVar)
+
 import Text.Parsec (parse,(<|>),try)
 import Text.Parsec.Char (string,letter,space)
 import Text.ParserCombinators.Parsec.Number (int)
-import qualified Data.Sequence as Seq (fromList)
-import Data.Sequence (index,update)
-import qualified Control.Concurrent.Thread as Thread ( forkIO )
-import Control.Concurrent.Chan (newChan,writeChan,readChan)
-import Control.Concurrent.MVar (newMVar,takeMVar,tryTakeMVar,putMVar)
-import Control.Exception.Base (catch,BlockedIndefinitelyOnMVar(..))
-import Control.Monad (replicateM)
 
 input       = Seq.fromList <$> lines <$> readFile "input/input18.txt"
 input_test  = Seq.fromList <$> lines <$> readFile "input/input18_test.txt"
@@ -89,8 +89,8 @@ solve2 inp = do
     snd2 <- newMVar (0::Int)
     let res1 = evalProg rcvQueue sndQueue snd1 (fmap instrs inp) (initRegs 0) 0
     let res2 = evalProg sndQueue rcvQueue snd2 (fmap instrs inp) (initRegs 1) 0
-    (_,wait1) <- Thread.forkIO $ res1
-    (_,wait2) <- Thread.forkIO $ res2
+    (_,wait1) <- forkIO $ res1
+    (_,wait2) <- forkIO $ res2
     catch wait1 (\BlockedIndefinitelyOnMVar -> return undefined)
     catch wait2 (\BlockedIndefinitelyOnMVar -> return undefined)
     ret1 <- takeMVar snd1

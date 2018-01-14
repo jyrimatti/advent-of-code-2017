@@ -1,11 +1,11 @@
 module Day22 where
 
-import Prelude hiding (map,(!!),replicate,(++))
-import Data.Sequence (Seq,adjust,index,(|>),replicate,(><))
-import qualified Data.Sequence as Seq (fromList,reverse)
-import Data.Bifunctor (bimap,first,second)
+import Prelude hiding (replicate)
 import Data.Foldable (toList)
+import Data.Bifunctor (bimap,first,second)
 import Data.Tuple.Extra ((&&&),both)
+import qualified Data.Sequence as Seq (fromList,reverse)
+import Data.Sequence (Seq,adjust,index,(|>),replicate,(><))
 
 input      = readFile "input/input22.txt"
 input_test = readFile "input/input22_test.txt"
@@ -30,8 +30,8 @@ parse inp = let
   in
     both Seq.fromList . (drop (negSize+1) &&& reverse . take (negSize+1)) $ rows
 
-(v1,_) !! i | i < 0 = v1 `index` (abs i - 1)
-(_,v2) !! i         = v2 `index` i
+(v1,_) !!! i | i < 0 = v1 `index` (abs i - 1)
+(_,v2) !!! i         = v2 `index` i
 
 parseNode '#' = Infected
 parseNode '.' = Clean
@@ -69,12 +69,12 @@ evolveNode _     Flagged  = Clean
 
 infectOrClean evolved grid (State _ loc _) = update (evolveNode evolved) loc grid
 
-updateDirection False grid state@(State dir (x,y) infs) | grid !! y !! x == Clean    = state { direction = turnLeft dir, infections = infs+1 }
+updateDirection False grid state@(State dir (x,y) infs) | grid !!! y !!! x == Clean    = state { direction = turnLeft dir, infections = infs+1 }
 updateDirection False _    state@(State dir _     _)                                 = state { direction = turnRight dir }
-updateDirection _     grid state@(State dir (x,y) _)    | grid !! y !! x == Infected = state { direction = turnRight dir }
-updateDirection _     grid state@(State dir (x,y) _)    | grid !! y !! x == Clean    = state { direction = turnLeft dir }
-updateDirection _     grid state@(State _   (x,y) infs) | grid !! y !! x == Weakened = state { infections = infs+1 }
-updateDirection _     grid state@(State dir (x,y) _)    | grid !! y !! x == Flagged  = state { direction = turnLeft (turnLeft dir) }
+updateDirection _     grid state@(State dir (x,y) _)    | grid !!! y !!! x == Infected = state { direction = turnRight dir }
+updateDirection _     grid state@(State dir (x,y) _)    | grid !!! y !!! x == Clean    = state { direction = turnLeft dir }
+updateDirection _     grid state@(State _   (x,y) infs) | grid !!! y !!! x == Weakened = state { infections = infs+1 }
+updateDirection _     grid state@(State dir (x,y) _)    | grid !!! y !!! x == Flagged  = state { direction = turnLeft (turnLeft dir) }
 
 move state@(State (dx,dy) (x,y) _) = state { location = (x+dx,y+dy) }
 

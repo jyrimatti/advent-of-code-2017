@@ -2,11 +2,12 @@
 module Day14 where
 
 import Data.Char (intToDigit,ord)
-import Data.List.Split (chunksOf)
 import Data.Bits (xor)
 import Data.Text (takeEnd,pack,unpack)
-import Numeric (showHex,readHex,showIntAtBase)
 import Data.Bifunctor (second)
+import Numeric (showHex,readHex,showIntAtBase)
+
+import Data.List.Split (chunksOf)
 import Data.Matrix.Unboxed (Matrix,(!),fromLists,rows)
 import qualified Data.Set as Set (fromList,empty)
 import Data.Set (insert,member,union,singleton)

@@ -1,8 +1,9 @@
 module Day17 where
 
-import Prelude hiding (length,(!!),splitAt,(++))
+import Prelude hiding (splitAt)
 import Data.Maybe (fromJust)
-import Data.Sequence (singleton,length,index,elemIndexL,splitAt,(><),(<|))
+
+import Data.Sequence (singleton,index,elemIndexL,splitAt,(><),(<|))
 
 input = 371
 
