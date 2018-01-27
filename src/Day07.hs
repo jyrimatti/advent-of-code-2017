@@ -3,6 +3,7 @@ module Day07 where
 
 import Data.Bifunctor (bimap)
 import Data.Tuple.Extra ((&&&))
+import Data.Function (on)
 import Data.List ((\\),nubBy,deleteBy)
 import qualified Data.Map.Strict as Map (fromList)
 import Data.Map.Strict ((!),elems,keys)
@@ -18,7 +19,7 @@ data Prog = Prog {
   _progName     :: String,
   _progWeight   :: Int,
   _progSubnames :: [String]
-} deriving Show
+}
 
 progP = Prog <$> (nameP <* space) <*> weightP <*> (optional (string " -> ") *> subnamesP)
 
@@ -30,7 +31,7 @@ subnamesP = many1 letter `sepBy` string ", "
 
 prog = either undefined id . parse progP ""
   
-progsMap = Map.fromList . fmap (_progName &&& id) . fmap prog
+progsByName = Map.fromList . fmap (_progName &&& id) . fmap prog
   
 data Program = Program {
   _name   :: String,
@@ -38,33 +39,34 @@ data Program = Program {
   _subs   :: [Program]
 } deriving Show
 
-enhance pMap (Prog n w s) = Program n w $ fmap (enhance pMap . (!) pMap) s
+-- convert list of programs to a tree of programs
+enhance byName (Prog name weight subs) = Program name weight $ fmap (enhance byName . (!) byName) subs
 
-programs inp = let
-  pMap = progsMap inp
+programs = (\byName -> fmap (enhance byName) byName) . progsByName
+
+bottom inp = let
+  progs = programs inp
+  allSubs = foldMap (fmap _name . _subs) $ elems progs
  in
-  fmap (enhance pMap) pMap
+  progs ! (head $ keys progs \\ allSubs)
 
-root inp = let
-  prgs = programs inp
-  allSubs = foldMap (fmap _name . _subs) $ elems prgs
- in
-  prgs ! (head $ keys prgs \\ allSubs)
+totalWeight (Program _ weight subPrograms) = weight + sum (fmap totalWeight subPrograms)
 
-totalWeight (Program _ w ss) = w + sum (fmap totalWeight ss)
-
-weightUnbalance (Program _ _ ss) = let
-  subWeights = fmap (id &&& totalWeight) ss
+weightUnbalance (Program _ _ subPrograms) = let
+  subWeights = fmap (id &&& totalWeight) subPrograms
   commonWeight = head $ tail subWeights
-  cmp a b = snd a == snd b
-  unbalanced = deleteBy cmp commonWeight (nubBy cmp subWeights)
+  equalWeight = (==) `on` snd
+  unbalanced = deleteBy equalWeight commonWeight (nubBy equalWeight subWeights)
  in
-  case foldMap weightUnbalance ss of
-    [x] -> [x]
-    [] -> fmap (uncurry (+) . bimap _weight (snd commonWeight - )) unbalanced
+  case foldMap weightUnbalance subPrograms of
+    [x] -> [x] -- pass the unbalance of sub programs
+    _   -> fmap (uncurry (+) . bimap _weight (snd commonWeight - )) unbalanced -- return the unbalance of this program
 
-solve1 = _name . root
-solve2 = head . weightUnbalance . root
+-- "What is the name of the bottom program?"
+solve1 = _name . bottom
+
+-- "what would its weight need to be to balance the entire tower"
+solve2 = head . weightUnbalance . bottom
 
 solution1 = solve1 <$> input
 solution2 = solve2 <$> input

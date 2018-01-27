@@ -1,28 +1,31 @@
 {-# LANGUAGE FlexibleContexts, TupleSections #-}
 module Day09 where
 
-import Data.Tuple.Extra ((&&&))
+import Data.Tuple.Extra (both)
+import Data.Bifunctor (first)
+import Data.List (unzip)
 
-import Text.Parsec (parse,many,(<|>),notFollowedBy,noneOf,eof)
+import Text.Parsec (parse,many,(<|>),noneOf)
 import Text.Parsec.String (Parser)
 import Text.Parsec.Char (char,anyChar)
-import Text.Parsec.Combinator (between,sepBy1)
+import Text.Parsec.Combinator (between,sepBy)
 
 input = readFile "input/input09.txt"
 
-group :: Int -> Parser (Int,Int)
-group level = ((level +) . sum . fmap fst &&& sum . fmap snd) <$> between (char '{') (char '}') (contents level `sepBy1` char ',')
+type TotalScoreAndNonCancelled = (Int,Int)
 
-contents level = group (level + 1) <|>
-                 (0,) <$> garbage <|>
-                 pure (0,0) <* notFollowedBy eof
+groupP :: Int -> Parser TotalScoreAndNonCancelled
+groupP level = first (level +) . both sum . unzip <$> between (char '{') (char '}') (contentsP level `sepBy` char ',')
 
-garbage = sum <$> between (char '<') (char '>') (many garbageContents)
+contentsP level = groupP (level + 1) <|>
+                  (0,) <$> garbageP -- garbage always has 0 score
 
-garbageContents = pure 0 <* (char '!' *> anyChar) <|>
-                  pure 1 <* noneOf ['>']
+garbageP = sum <$> between (char '<') (char '>') (many garbageContentsP)
 
-solve = either undefined id . parse (group 1) ""
+garbageContentsP = pure 0 <* (char '!' *> anyChar) <|> -- cancelled char
+                   pure 1 <* noneOf ['>']              -- non-cancelled char
+
+solve = either undefined id . parse (groupP 1) ""
 
 solution1 = fst <$> solve <$> input
 solution2 = snd <$> solve <$> input

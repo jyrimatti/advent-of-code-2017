@@ -17,24 +17,24 @@ input = lines <$> readFile "input/input23.txt"
 type Reg = Char
 type RegOrVal = Either Reg Int
 
-data Instr = Set Reg RegOrVal
-           | Sub Reg RegOrVal
-           | Mul Reg RegOrVal
-           | Jnz RegOrVal RegOrVal
+data Instruction = Set Reg RegOrVal
+                 | Sub Reg RegOrVal
+                 | Mul Reg RegOrVal
+                 | Jnz RegOrVal RegOrVal
   deriving Show
 
 regP = letter
 
 regOrValP = Left <$> regP <|> Right <$> int
 
-instrP = try (Set <$> (string "set " *> regP)      <*> (space *> regOrValP)) <|>
-         try (Sub <$> (string "sub " *> regP)      <*> (space *> regOrValP)) <|>
-         try (Mul <$> (string "mul " *> regP)      <*> (space *> regOrValP)) <|>
-         try (Jnz <$> (string "jnz " *> regOrValP) <*> (space *> regOrValP))
+instructionP = try (Set <$> (string "set " *> regP)      <*> (space *> regOrValP)) <|>
+               try (Sub <$> (string "sub " *> regP)      <*> (space *> regOrValP)) <|>
+               try (Mul <$> (string "mul " *> regP)      <*> (space *> regOrValP)) <|>
+               try (Jnz <$> (string "jnz " *> regOrValP) <*> (space *> regOrValP))
 
-instr = either undefined id . parse instrP ""
+instruction = either undefined id . parse instructionP ""
 
-instrs = Vec.fromList . fmap instr
+instructions = Vec.fromList . fmap instruction
 
 indexOf r = ord r - 97
 
@@ -50,19 +50,22 @@ eval (muls,regs) (Mul reg regOrVal)                         = (muls+1, update (i
 eval (muls,regs) (Jnz regOrVal os) | get regs regOrVal /= 0 = (muls  , regs, get regs os)
 eval (muls,regs) (Jnz _ _)                                  = (muls  , regs, 1)
 
-evalProg prog muls regs loc _     | loc < 0 || loc >= length prog = (muls,regs)
-evalProg _    muls regs _   steps | steps == (0::Int)             = (muls,regs)
-evalProg prog muls regs loc steps =
+evalProg program muls regs location _     | location < 0 || location >= length program = (muls,regs)
+evalProg _       muls regs _        stepsLeft | stepsLeft == (0::Int)                  = (muls,regs)
+evalProg program muls regs location stepsLeft =
   let
-    (!m,!r,!o) = eval (muls,regs) (prog ! loc)
+    (!newMuls,!newRegs,!offset) = eval (muls,regs) (program ! location)
   in
-    evalProg prog m r (loc+o) (steps-1)
+    evalProg program newMuls newRegs (location+offset) (stepsLeft-1)
 
 stepSize = 17
 
-solve1 inp = fst $ evalProg (instrs inp) (0::Int) (initRegs 0) 0 (-1)
+-- "how many times is the mul instruction invoked"
+solve1 inp = fst $ evalProg (instructions inp) (0::Int) (initRegs 0) 0 (-1)
+
+-- "what value would be left in register h"
 solve2 inp = let 
-   (_,initialRegs) = evalProg (instrs inp) (0::Int) (initRegs 1) 0 7
+   (_,initialRegs) = evalProg (instructions inp) (0::Int) (initRegs 1) 0 7
    start = initialRegs `index` 1
    end = initialRegs `index` 2
  in

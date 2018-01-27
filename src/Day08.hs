@@ -2,6 +2,7 @@ module Day08 where
 
 import System.Process (callCommand)
 
+-- transform input to a runnable bash script
 solve1_1 = callCommand "\
   \ cat input/input08.txt | \
     \ sed 's/inc/+/g' | \
@@ -20,9 +21,11 @@ solve1_1 = callCommand "\
 
 solve1_2 = callCommand "chmod u+x dist/input.sh"
 
+-- "What is the largest value in any register"
 solve1_3 = callCommand "dist/input.sh | sort -gr | head -n1"
 
 
+-- transform input to a runnable bash script
 solve2_1 = callCommand "\
   \ cat input/input08.txt | \
     \ sed 's/inc/+/g' | \
@@ -38,6 +41,7 @@ solve2_1 = callCommand "\
 
 solve2_2 = callCommand "chmod u+x dist/input.sh"
 
+-- "the highest value held in any register during this process"
 solve2_3 = callCommand "dist/input.sh | grep '_.*' | sed 's/_\\(.*\\)/\\1/g' | sort -gr | head -n1"
 
 solution1 = solve1_1 >> solve1_2 >> solve1_3

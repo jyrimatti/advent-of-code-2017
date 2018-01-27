@@ -7,45 +7,47 @@ import Numeric (showHex)
 import Data.Text (splitOn,pack,unpack)
 import Data.List.Split (chunksOf)
 
-parse1 = fmap read <$> fmap unpack . splitOn "," . pack
-parse2 = id
+parseAsLengths = fmap read <$> fmap unpack . splitOn "," . pack
 
-input parse = parse <$> readFile "input/input10.txt"
+parseAsCharacters = fmap ord
 
+input      parse = parse <$> readFile "input/input10.txt"
 input_test parse = parse <$> readFile "input/input10_test.txt"
 
-sublist start len = take len . drop start . cycle
+-- cyclic sublist with offset and length
+sublist offset len = take len . drop offset . cycle
 
-step :: Int -> Int -> [Int] -> [Int] -> [Int]
-step _   _        list []      = list
-step pos skipSize list lengths = let
-  len = head lengths
-  section = sublist pos len list
-  reversed = reverse section
-  prefix = take pos list
-  suffix = drop (pos + len) list
-  tempList = prefix ++ reversed ++ suffix
-  overflowing = drop (length list) tempList
+step _   _        listOfNumbers []      = listOfNumbers
+step currentPosition skipSize listOfNumbers (first:rest) = let
+  section = sublist currentPosition first listOfNumbers
+  prefix = take currentPosition listOfNumbers
+  suffix = drop (currentPosition + first) listOfNumbers
+  tempList = prefix ++ reverse section ++ suffix
+  overflowing = drop (length listOfNumbers) tempList
   remaining = drop (length overflowing) tempList
-  newList = take (length list) $ overflowing ++ remaining
+  newList = take (length listOfNumbers) $ overflowing ++ remaining
  in
-  step ((pos + len + skipSize) `mod` length list) (skipSize + 1) newList (tail lengths)
-  
-solve1 list = product . take 2 . step 0 0 list
+  step ((currentPosition + first + skipSize) `mod` length listOfNumbers) (skipSize + 1) newList rest
+
+firstStep :: [Int] -> [Int] -> [Int]
+firstStep = step 0 0
+
+-- "what is the result of multiplying the first two numbers in the list"
+solve1 listOfNumbers = product . take 2 . firstStep listOfNumbers
 
 standardSuffix = [17, 31, 73, 47, 23]
 
+-- "use numeric bitwise XOR to combine each consecutive block of 16 numbers in the sparse hash"
 denseHash = fmap (foldr1 xor) . chunksOf 16
 
-leftpad [a] = ['0', a]
-leftpad a   = a
+-- not the famous js-thing ;) This just ensures each hex is 2 characters
+leftpad [a]   = ['0', a]
+leftpad [a,b] = [a,b]
 
-solve2 list inp = let
-  lengths = fmap ord inp ++ standardSuffix
-  times64 = take (64 * length lengths) $ cycle lengths
-  toHexWithLeadingZero i = leftpad (showHex i "")
- in
-  foldMap toHexWithLeadingZero . denseHash . step 0 0 list $ times64
-  
-solution1 = solve1 [0..255] <$> input parse1
-solution2 = solve2 [0..255] <$> input parse2
+toHexWithLeadingZero i = leftpad (showHex i "")
+
+-- "what is the Knot Hash of your puzzle input"
+solve2 listOfNumbers = foldMap toHexWithLeadingZero . denseHash . firstStep listOfNumbers . concat . replicate 64 . (++ standardSuffix)
+
+solution1 = solve1 [0..255] <$> input parseAsLengths
+solution2 = solve2 [0..255] <$> input parseAsCharacters

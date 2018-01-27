@@ -7,56 +7,58 @@ import Data.List ((\\),unfoldr)
 import Data.Vector.Unboxed (elemIndex)
 import Data.Matrix.Unboxed (Matrix,(!),fromLists,takeRow,rows,cols)
 
-type Coord = (Int,Int)
-
 parse :: String -> Matrix Char
 parse = fromLists <$> lines
 
 input      = parse <$> readFile "input/input19.txt"
 input_test = parse <$> readFile "input/input19_test.txt"
 
-start = (,0) . fromJust . elemIndex '|' . flip takeRow 0
+-- start on vertical bar on the first row
+startCoordinate = (,0) . fromJust . elemIndex '|' . flip takeRow 0
 
 withinBounds width height (x,y) = x >= 0 && y >= 0 && x < width && y < height
 
 adjacent width height (x,y) = filter (withinBounds width height) [(x-1,y),(x,y-1),(x+1,y),(x,y+1)]
 
-(!!!) inp = (inp !) . swap
+(!!!) grid = (grid !) . swap
 
 (x,y) +.+ (a,b) = (x+a,y+b)
 (x,y) -.- (a,b) = (x-a,y-b)
 
-nonempty inp = filter $ (/= ' ') . (inp !!!)
+nonemptyCoordinate grid = (/= ' ') . (grid !!!)
 
-direction _     loc inp | loc == start inp = (0,1)
-direction prevs loc inp                    = case nonempty inp $ adjacent (cols inp) (rows inp) loc of
-    [_]    -> (0,0) -- in goal!
-    double -> let
-                [c] = double \\ prevs
+nextDirection _                   currentLocation grid | currentLocation == startCoordinate grid = (0,1)
+nextDirection previousCoordinates currentLocation grid = case filter (nonemptyCoordinate grid) $ adjacent (cols grid) (rows grid) currentLocation of
+    [_]    -> (0,0) -- Only one non-empty adjacent location -> in goal!
+    xs -> let
+                [c] = xs \\ previousCoordinates
               in
-                c -.- loc
+                c -.- currentLocation
 
-line diff = unfoldr $ \loc -> Just (loc, loc +.+ diff)
+straightLine direction = unfoldr $ \currentLocation -> Just (currentLocation, currentLocation +.+ direction)
 
 isOneOf = flip elem
 
-untilTurnOrEnd inp = takeWhile $ not . isOneOf ['+',' '] . (inp !!!)
+untilTurnOrEnd grid = takeWhile $ not . isOneOf ['+',' '] . (grid !!!)
 
-filterLetters inp = filter $ isOneOf ['A'..'Z'] . (inp !!!)
+letterCoordinates grid = isOneOf ['A'..'Z'] . (grid !!!)
 
-walk inp prevs loc = let
-    dir = direction prevs loc inp
-    steps = untilTurnOrEnd inp $ line dir loc
-    letters = fmap (inp !!!) $ (filterLetters inp) steps
-    final = last (loc : steps) +.+ dir
-    count = if length steps == 0 then 0 else length steps + 1
+walk grid previousCoordinates currentLocation = let
+    direction = nextDirection previousCoordinates currentLocation grid
+    path = untilTurnOrEnd grid $ straightLine direction currentLocation
+    lettersOnPath = fmap (grid !!!) $ filter (letterCoordinates grid) path
+    newLocation = last (currentLocation : path) +.+ direction
+    steps = if length path == 0 then 0 else length path + 1
   in
-    case dir of
-      (0,0) -> ([],-1)
-      _     -> let (lx,c) = walk inp (loc : steps) final
-                in (letters ++ lx, count + c)
+    case direction of
+      (0,0) -> ([],-1) -- don't move -> in goal!
+      _     -> let (foundLetters,distanceTravelled) = walk grid (currentLocation : path) newLocation
+                in (lettersOnPath ++ foundLetters, distanceTravelled + steps)
 
-solve inp = walk inp [] (start inp)
+solve grid = walk grid [] (startCoordinate grid)
 
+-- "What letters will it see"
 solution1 = fst . solve <$> input
+
+-- "How many steps does the packet need to go"
 solution2 = snd . solve <$> input

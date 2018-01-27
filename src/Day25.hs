@@ -4,8 +4,9 @@ module Day25 where
 import Prelude hiding (replicate)
 import Data.Foldable (toList)
 import Data.Tuple.Extra (both)
+import Data.Bifunctor (bimap,first,second)
 import Data.List (find)
-import Data.Sequence (update,replicate,index,(|>))
+import Data.Sequence (Seq,update,replicate,index,(|>))
 
 import Text.Parsec (parse,many,(<|>),try)
 import Text.Parsec.Char (string,noneOf,anyChar,char,space)
@@ -14,9 +15,9 @@ input      = readFile "input/input25.txt"
 input_test = readFile "input/input25_test.txt"
 
 data Instructions = Instructions {
-    _beginState :: Char,
-    _endInSteps :: Int,
-    _states     :: [State]
+    _beginStateName :: Char,
+    _endInSteps     :: Int,
+    _states         :: [State]
 } deriving Show
 
 data State = State {
@@ -26,50 +27,58 @@ data State = State {
 } deriving Show
 
 data Phase = Phase {
-    _condition :: Int,
-    _output    :: Int,
-    _direction :: Int,
-    _nextState :: Char
+    _condition     :: Int,
+    _output        :: Int,
+    _direction     :: Int,
+    _nextStateName :: Char
 } deriving Show
 
 ws = many space
 
-header       = string "Begin in state " *> anyChar <* char '.'
-endCondition = read <$> (string "Perform a diagnostic checksum after " *> many (noneOf " ") <* string " steps.")
+headerP       = string "Begin in state " *> anyChar <* char '.'
+endConditionP = read <$> (string "Perform a diagnostic checksum after " *> many (noneOf " ") <* string " steps.")
 
-phaseHeader = string "In state " *> anyChar <* char ':'
-cond        = read <$> (string "If the current value is " *> many (noneOf ":") <* char ':')
-write       = read <$> (string "- Write the value " *> many (noneOf ".") <* char '.')
-moveRight   = string "- Move one slot to the right." *> pure 1
-moveLeft    = string "- Move one slot to the left." *> pure (-1)
-continue    = string "- Continue with state " *> anyChar <* char '.'
+phaseHeaderP = string "In state " *> anyChar <* char ':'
+condP        = read <$> (string "If the current value is " *> many (noneOf ":") <* char ':')
+writeP       = read <$> (string "- Write the value " *> many (noneOf ".") <* char '.')
+moveRightP   = string "- Move one slot to the right." *> pure 1
+moveLeftP    = string "- Move one slot to the left." *> pure (-1)
+continueP    = string "- Continue with state " *> anyChar <* char '.'
 
-phase = Phase <$> (cond <* ws) <*> (write <* ws) <*> ((try moveRight <|> try moveLeft) <* ws) <*> (continue <* ws)
+phaseP = Phase <$> (condP <* ws) <*> (writeP <* ws) <*> ((try moveRightP <|> try moveLeftP) <* ws) <*> (continueP <* ws)
 
-state = State <$> (phaseHeader <* ws) <*> phase <*> phase
+stateP = State <$> (phaseHeaderP <* ws) <*> phaseP <*> phaseP
 
-instructions = Instructions <$> (header <* ws) <*> (endCondition <* ws) <*> many (state <* ws)
+instructionsP = Instructions <$> (headerP <* ws) <*> (endConditionP <* ws) <*> many (stateP <* ws)
 
-instr = either undefined id . parse instructions ""
+instructions = either undefined id . parse instructionsP ""
 
-extend loc vec | length vec <= abs loc + 1 = vec |> 0
-extend _   vec                             = vec
+extendIfNeeded requiredPosition sequ | length sequ <= abs requiredPosition + 1 = sequ |> 0
+extendIfNeeded _                sequ                                           = sequ
 
-run 0          (neg,pos) _   _ _  = (reverse $ tail $ toList neg, toList pos)
-run iterations (neg,pos) loc s ss = let
-    Just (State _ p0 p1) = find ((== s) . _name) ss
-    !curValue = if loc < 0 then neg `index` abs loc else pos `index` loc
-    Phase _ out dir newState = if curValue == 0 then p0 else p1
-    !newTape = (if loc < 0 then update (abs loc) out (extend loc neg) else neg,
-                if loc >= 0 then update loc out (extend loc pos) else pos)
-    !newLoc = loc + dir
+type Tape = (Seq Int,Seq Int)
+
+(!!!) :: Tape -> Int -> Int
+(neg,_  ) !!! position | position < 0 = neg `index` abs position
+(_  ,pos) !!! position                = pos `index` position
+
+updateTape position value | position < 0 = first  $ update (abs position) value . extendIfNeeded position
+updateTape position value                = second $ update      position  value . extendIfNeeded position
+
+run 0         tape _               _                _      = bimap (reverse . tail . toList) toList tape
+run stepsLeft tape currentPosition currentStateName states = let
+    Just (State _ phase0 phase1)          = find ((== currentStateName) . _name) states
+    Phase _ output direction newStateName = if tape !!! currentPosition == 0 then phase0 else phase1
+    !newTape                              = updateTape currentPosition output tape
+    !newPosition                          = currentPosition + direction
   in
-    run (iterations-1) newTape newLoc newState ss
+    run (stepsLeft-1) newTape newPosition newStateName states
 
 checksum = sum
 
-solve (Instructions begin endIn ss) = run endIn (replicate 2 0, replicate 2 0) 0 begin ss
+solve (Instructions beginStateName endInSteps states) = run endInSteps (replicate 2 0, replicate 2 0) 0 beginStateName states
 
-solve1 = uncurry (+) . both checksum . solve . instr
+-- "What is the diagnostic checksum"
+solve1 = uncurry (+) . both checksum . solve . instructions
 
 solution1 = solve1 <$> input

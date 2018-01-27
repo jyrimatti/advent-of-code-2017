@@ -72,27 +72,33 @@ evalProg rcvQueue sndQueue sends prog regs loc = do
   (newRegs,offset) <- eval rcvQueue sndQueue sends regs (prog `index` loc)
   evalProg rcvQueue sndQueue sends prog newRegs (loc+offset)
 
+-- "What is the value of the recovered frequency the first time a rcv instruction is executed with a non-zero value"
 solve1 inp = do
   rcvQueue <- newChan
   sndQueue <- newChan
   writeChan sndQueue undefined
   sends <- newMVar 0
   let res = evalProg rcvQueue sndQueue sends (fmap instrs inp) (initRegs 0) 0
+  -- will block on first rcv, since no one is sending anything
   catch res $ \BlockedIndefinitelyOnMVar -> do
     times <- takeMVar sends
+    -- read as many sounds from the queue as have been played, return the last one.
     fmap last $ replicateM (times+1) $ readChan sndQueue
 
+-- "how many times did program 1 send a value"
 solve2 inp = do
     rcvQueue <- newChan
     sndQueue <- newChan
     snd1 <- newMVar (0::Int)
     snd2 <- newMVar (0::Int)
+    -- receive queue for the second process is the send queue of the first one, and the other way round.
     let res1 = evalProg rcvQueue sndQueue snd1 (fmap instrs inp) (initRegs 0) 0
     let res2 = evalProg sndQueue rcvQueue snd2 (fmap instrs inp) (initRegs 1) 0
     (_,wait1) <- forkIO $ res1
     (_,wait2) <- forkIO $ res2
     catch wait1 (\BlockedIndefinitelyOnMVar -> return undefined)
     catch wait2 (\BlockedIndefinitelyOnMVar -> return undefined)
+    -- after both have finished, return number of sends for each process
     ret1 <- takeMVar snd1
     ret2 <- takeMVar snd2
     return (ret1,ret2)

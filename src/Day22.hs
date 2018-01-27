@@ -2,7 +2,7 @@ module Day22 where
 
 import Prelude hiding (replicate)
 import Data.Foldable (toList)
-import Data.Bifunctor (bimap,first,second)
+import Data.Bifunctor (first,second)
 import Data.Tuple.Extra ((&&&),both)
 import qualified Data.Sequence as Seq (fromList,reverse)
 import Data.Sequence (Seq,adjust,index,(|>),replicate,(><))
@@ -14,43 +14,46 @@ data Node = Clean | Infected | Flagged | Weakened
   deriving Eq
 
 instance Show Node where
-    show Clean = "."
+    show Clean    = "."
     show Infected = "#"
-    show Flagged = "F"
+    show Flagged  = "F"
     show Weakened = "W"
 
 type Row = (Seq Node,Seq Node)
 type Grid = (Seq Row,Seq Row)
 
-parse inp = let
-    rawRows = lines inp
-    negSize = length rawRows `div` 2
-    f = Seq.fromList . fmap parseNode
-    rows = fmap (both f . (reverse . take negSize &&& drop negSize)) rawRows
-  in
-    both Seq.fromList . (drop (negSize+1) &&& reverse . take (negSize+1)) $ rows
-
-(v1,_) !!! i | i < 0 = v1 `index` (abs i - 1)
-(_,v2) !!! i         = v2 `index` i
-
 parseNode '#' = Infected
 parseNode '.' = Clean
+
+-- split each line to two halves so they can grow in both directions
+parseRow :: Int -> String -> Row
+parseRow splitLength = both (Seq.fromList . fmap parseNode) . (reverse . take splitLength &&& drop splitLength)
+
+-- split rows to two halves so the grid can grow in both directions
+splitRows :: Int -> [Row] -> ([Row],[Row])
+splitRows splitLength = (drop (splitLength+1) &&& reverse . take (splitLength+1))
+
+parseGrid :: String -> Grid
+parseGrid inp = let
+    rows = lines inp
+    negativeSize = length rows `div` 2
+  in
+    both Seq.fromList . splitRows negativeSize . fmap (parseRow negativeSize) $ rows
 
 type Direction  = (Int,Int)
 type Coordinate = (Int,Int)
 
 data State = State {
-    direction  :: Direction,
-    location   :: Coordinate,
-    infections :: Int
+    _direction  :: Direction,
+    _location   :: Coordinate,
+    _infections :: Int
 } deriving Show
 
-prettyPrint (bottoms,tops) = unlines . toList . fmap (\(bs,ts) -> toList . foldMap show $ Seq.reverse bs >< ts) $ Seq.reverse tops >< bottoms
+-- the grid is split to half, so adjust the correct index in the correct half
+adjustAt f i | i < 0 = first (adjust f (abs i - 1))
+adjustAt f i         = second (adjust f i)
 
-adj f i | i < 0 = first (adjust f (abs i - 1))
-adj f i         = second (adjust f i)
-
-update f (x,y) = adj (adj f x) y
+update f (x,y) = adjustAt (adjustAt f x) y
 
 turnLeft :: Direction -> Direction
 turnLeft (0,1)  = (-1,0)
@@ -60,46 +63,56 @@ turnLeft (1,0)  = (0,1)
 
 turnRight = both (* (-1)) . turnLeft
 
-evolveNode False Clean    = Infected
-evolveNode False Infected = Clean
-evolveNode _     Clean    = Weakened
-evolveNode _     Weakened = Infected
-evolveNode _     Infected = Flagged
-evolveNode _     Flagged  = Clean
+data Mode = Normal | Evolved
 
-infectOrClean evolved grid (State _ loc _) = update (evolveNode evolved) loc grid
+evolveNode Normal Clean    = Infected
+evolveNode Normal Infected = Clean
+evolveNode _      Clean    = Weakened
+evolveNode _      Weakened = Infected
+evolveNode _      Infected = Flagged
+evolveNode _      Flagged  = Clean
 
-updateDirection False grid state@(State dir (x,y) infs) | grid !!! y !!! x == Clean    = state { direction = turnLeft dir, infections = infs+1 }
-updateDirection False _    state@(State dir _     _)                                 = state { direction = turnRight dir }
-updateDirection _     grid state@(State dir (x,y) _)    | grid !!! y !!! x == Infected = state { direction = turnRight dir }
-updateDirection _     grid state@(State dir (x,y) _)    | grid !!! y !!! x == Clean    = state { direction = turnLeft dir }
-updateDirection _     grid state@(State _   (x,y) infs) | grid !!! y !!! x == Weakened = state { infections = infs+1 }
-updateDirection _     grid state@(State dir (x,y) _)    | grid !!! y !!! x == Flagged  = state { direction = turnLeft (turnLeft dir) }
+infectOrClean mode (State _ loc _) = update (evolveNode mode) loc
 
-move state@(State (dx,dy) (x,y) _) = state { location = (x+dx,y+dy) }
+(v1,_) !!! i | i < 0 = v1 `index` (abs i - 1)
+(_,v2) !!! i         = v2 `index` i
+
+updateDirection Normal grid state@(State dir (x,y) infs) | grid !!! y !!! x == Clean    = state { _direction = turnLeft dir, _infections = infs+1 }
+updateDirection Normal _    state@(State dir _     _)                                   = state { _direction = turnRight dir }
+updateDirection _      grid state@(State dir (x,y) _)    | grid !!! y !!! x == Infected = state { _direction = turnRight dir }
+updateDirection _      grid state@(State dir (x,y) _)    | grid !!! y !!! x == Clean    = state { _direction = turnLeft dir }
+updateDirection _      grid state@(State _   (x,y) infs) | grid !!! y !!! x == Weakened = state { _infections = infs+1 }
+updateDirection _      grid state@(State dir (x,y) _)    | grid !!! y !!! x == Flagged  = state { _direction = turnLeft (turnLeft dir) }
+
+move state@(State (dx,dy) (x,y) _) = state { _location = (x+dx,y+dy) }
 
 extendRow = both (|> Clean)
 
+extendHalfGrid half = fmap extendRow $ half |> emptyCopy (half `index` 0)
+
 emptyCopy = both (flip replicate Clean . length)
 
-extend grid (State _ (x,y) _) | (max (abs x) (abs y)) < length (fst grid) = grid
-extend grid (State _ _     _) = bimap (\bottoms -> fmap extendRow $ bottoms |> emptyCopy (bottoms `index` 0))
-                                      (\tops    -> fmap extendRow $ tops |> emptyCopy (tops `index` 0))
-                                      grid
+extend grid (State _ (x,y) _) | max (abs x) (abs y) < length (fst grid) = grid
+extend grid (State _ _     _)                                           = both extendHalfGrid grid
 
-act evolved (grid,state) = let
-    newState = updateDirection evolved grid state
-    newGrid = infectOrClean evolved grid newState
+burst mode (grid,state) = let
+    newState = updateDirection mode grid state
+    newGrid = infectOrClean mode newState grid
   in
     (extend newGrid newState, move newState)
 
 initialState = State (0,1) (0,0) 0
 
-solv evolved iterations inp = head . drop iterations . iterate (act evolved) $ (parse inp, initialState)
+solv mode iterations inp = head . drop iterations . iterate (burst mode) $ (parseGrid inp, initialState)
 
-solve evolved iterations = infections . snd . solv evolved iterations
+solve mode iterations = _infections . snd . solv mode iterations
 
-debug evolved iterations inp = solv evolved iterations <$> inp >>= (putStrLn . prettyPrint . fst)
+prettyPrint (bottoms,tops) = unlines . toList . fmap (\(bs,ts) -> toList . foldMap show $ Seq.reverse bs >< ts) $ Seq.reverse tops >< bottoms
 
-solution1 = solve False 10000 <$> input
-solution2 = solve True 10000000 <$> input
+debug mode iterations inp = solv mode iterations <$> inp >>= (putStrLn . prettyPrint . fst)
+
+-- "how many bursts cause a node to become infected"
+solution1 = solve Normal 10000 <$> input
+
+-- "how many bursts cause a node to become infected"
+solution2 = solve Evolved 10000000 <$> input

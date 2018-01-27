@@ -18,18 +18,23 @@ testB = 8921 :: Int
 toBinary :: Int -> String
 toBinary = flip (showIntAtBase 2 intToDigit) ""
 
-calculate mult prev = prev * mult `rem` divisor
+calculate factor previous = previous * factor `rem` divisor
 
-calc condition factor initial = takeEnd 16 . pack . toBinary <$> (filter condition $ iterate (calculate factor) initial)
+generate condition factor initial = takeEnd 16 . pack . toBinary <$> (filter condition $ iterate (calculate factor) initial)
 
-calcBoth a b = zip (calc (const True) factorA a) (calc (const True) factorB b)
+noFilter = const True
+divisibleBy x = (0 ==) . (`mod` x)
 
-calcBoth2 aa b = zip (calc (\a -> (a `mod` 4) == 0) factorA aa) (calc (\a -> (a `mod` 8) == 0) factorB b)
+generatePairs (a,b) = zip (generate noFilter factorA a) (generate noFilter factorB b)
 
-solve1 a b = length . filter (uncurry (==)) . take 40000000 $ calcBoth a b
+generatePairs2 (a,b) = zip (generate (divisibleBy 4) factorA a) (generate (divisibleBy 8) factorB b)
 
-solve2 a b = length . filter (uncurry (==)) . take 5000000 $ calcBoth2 a b
+-- "what is the judge's final count"
+solve1 = length . filter (uncurry (==)) . take 40000000 . generatePairs
 
-solution1 = solve1 inputA inputB
+-- "what is the judge's final count"
+solve2 = length . filter (uncurry (==)) . take 5000000 . generatePairs2
 
-solution2 = solve2 inputA inputB
+solution1 = solve1 (inputA, inputB)
+
+solution2 = solve2 (inputA, inputB)

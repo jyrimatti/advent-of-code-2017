@@ -4,13 +4,15 @@ import Data.Bifunctor (bimap)
 import Data.Maybe (fromJust)
 import Data.List (find)
 import Data.List.Split (chunksOf)
-import Data.Matrix.Unboxed (Matrix,fromLists,force,tr,toList,toLists,rows,subMatrix,fromBlocks)
+import Data.Matrix.Unboxed (Matrix,fromLists,tr,toList,toLists,rows,subMatrix,fromBlocks,force)
 
 import Text.Parsec (parse,many1)
 import Text.Parsec.Char (string,noneOf,char)
 import Text.Parsec.Combinator (sepBy1)
 
-initial = fromLists $ fmap (fmap toBool) $ [".#.","..#","###"]
+parsePattern = fromLists . fmap (fmap onOrOff)
+
+initialImage = parsePattern [".#.","..#","###"]
 
 input = lines <$> readFile "input/input21.txt"
 
@@ -18,34 +20,39 @@ type Pattern = Matrix Bool
 
 ruleP = (,) <$> (patternP <* string " => ") <*> patternP
 
-patternP = force . fromLists . fmap (fmap toBool) <$> many1 (noneOf "/ ") `sepBy1` char '/'
+patternP = parsePattern <$> many1 (noneOf "/ ") `sepBy1` char '/'
 
-toBool '#' = True
-toBool '.' = False
+onOrOff '#' = True
+onOrOff '.' = False
 
-variants p = [p] ++ rotations p ++ foldMap rotations (flips p)
+variants pattern = [pattern] ++ rotations pattern ++ foldMap rotations (flips pattern)
 
-rotations p = [rotate p, rotate $ rotate p, rotate $ rotate $ rotate p]
+rotations pattern = fmap ($ pattern) [rotate, rotate . rotate, rotate . rotate . rotate]
 rotate = tr . fromLists . reverse . toLists
 
-flips p = [flipMatrix p, tr $ flipMatrix $ tr p]
 flipMatrix = fromLists . reverse . toLists
+
+flips pattern = fmap ($ pattern) [flipMatrix, tr . flipMatrix . tr]
 
 allRules = foldMap $ (uncurry zip . bimap variants repeat) . either undefined id . parse ruleP ""
 
-parts n dim = [subMatrix (x-1,y-1) (x+n-2,y+n-2) | x <- [1,(n+1)..dim], y <- [1,(n+1)..dim]]
+-- must use force, since the matrix library seems to have a bug regarding equality
+breakIntoSquares squareSize matrix = fmap force $ [subMatrix (x-1,y-1) (x+squareSize-2,y+squareSize-2) matrix | x <- [1,(squareSize+1)..rows matrix], y <- [1,(squareSize+1)..rows matrix]]
 
-subs p = fmap force $ fmap ($ p) $ parts (if rows p `mod` 2 == 0 then 2 else 3) (rows p)
+squares matrix = breakIntoSquares (if rows matrix `mod` 2 == 0 then 2 else 3) matrix
 
 enhance _     0         = id
-enhance rules iteration = enhance rules (iteration - 1::Int) . join . fmap (replace rules) . subs
+enhance rules iteration = enhance rules (iteration - 1::Int) . joinMatrices . fmap (substitute rules) . squares
 
-replace rules x = snd . fromJust . find ((== x) . fst) $ rules
+substitute rules pattern = snd . fromJust . find ((== pattern) . fst) $ rules
 
-join :: [Pattern] -> Pattern
-join ms = fromBlocks False $ chunksOf (floor . (sqrt :: Double -> Double) . fromIntegral . length $ ms) ms
+joinMatrices :: [Pattern] -> Pattern
+joinMatrices matrices = fromBlocks False $ chunksOf (floor . (sqrt :: Double -> Double) . fromIntegral . length $ matrices) matrices
 
-solve iterations = length . filter (== True) . toList . (\inp -> enhance (allRules inp) iterations initial)
+solve iterations = length . filter id . toList . (\inp -> enhance (allRules inp) iterations initialImage)
 
+-- "How many pixels stay on after 5 iterations"
 solution1 = solve 5 <$> input
+
+-- "How many pixels stay on after 18 iterations"
 solution2 = solve 18 <$> input

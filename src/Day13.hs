@@ -16,22 +16,26 @@ input_test = lines <$> readFile "input/input13_test.txt"
 
 layerP = fromJust . match (Layer <$> decimal <* string ": " <*> decimal)
 
-hasScanner (Layer _ r) time = time `mod` ((r - 1) * 2) == 0
+-- takes 2*(range-1) time steps for the scanner to get back to the top
+hasScanner (Layer _ range) time = time `mod` ((range - 1) * 2) == 0
 
-severity (Layer d r) = d * r
+severity (Layer depth range) = depth * range
 
-timeAt delay (Layer d _) = d + delay
+timeWithDelay delay (Layer depth _) = depth + delay
 
-caught delay layer = hasScanner layer $ timeAt delay layer
+-- check if scanner is at the given depth after given delay 
+caughtAtLayer delay layer@(Layer depth _) = hasScanner layer $ delay + depth
 
-tripSeverity delay = sum . fmap severity . filter (caught delay)
+tripSeverity delay = sum . fmap severity . filter (caughtAtLayer delay)
 
+-- "what is the severity of your whole trip"
 solve1 = tripSeverity 0 . fmap layerP
 
+-- "fewest number of picoseconds that you need to delay"
 solve2 inp = let
   layers = fmap layerP inp
  in
-  fromJust $ find (\delay -> not $ any (caught delay) layers) [0..]
+  fromJust $ find (\delay -> not $ any (caughtAtLayer delay) layers) [0..]
 
 solution1 = solve1 <$> input
 solution2 = solve2 <$> input
